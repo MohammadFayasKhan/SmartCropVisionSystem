@@ -1,0 +1,37 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments and dependencies
+venv/
+.venv/
+env/
+.env
+node_modules/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS and IDE metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Training logs and temporary run caches
+*.log
+runs/
+scratch/
+temp/
+
+# Supporting tools and external workspaces
+humanizer-main/

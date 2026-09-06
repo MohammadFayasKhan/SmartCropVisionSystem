@@ -1,0 +1,47 @@
+[
+  {
+    "id": "tomato__fungal__early_blight",
+    "title": "Tomato Early Blight",
+    "file_name": "tomato__fungal__early_blight.jpg",
+    "url": "/samples/tomato__fungal__early_blight.jpg",
+    "crop": "Tomato",
+    "disease_name": "Early Blight",
+    "condition_type": "fungal"
+  },
+  {
+    "id": "grape__fungal__black_rot",
+    "title": "Grape Black Rot",
+    "file_name": "grape__fungal__black_rot.jpg",
+    "url": "/samples/grape__fungal__black_rot.jpg",
+    "crop": "Grape",
+    "disease_name": "Black Rot",
+    "condition_type": "fungal"
+  },
+  {
+    "id": "potato__healthy__healthy",
+    "title": "Potato Healthy",
+    "file_name": "potato__healthy__healthy.jpg",
+    "url": "/samples/potato__healthy__healthy.jpg",
+    "crop": "Potato",
+    "disease_name": "Healthy Potato Leaf",
+    "condition_type": "healthy"
+  },
+  {
+    "id": "apple__healthy__healthy",
+    "title": "Apple Healthy",
+    "file_name": "apple__healthy__healthy.jpg",
+    "url": "/samples/apple__healthy__healthy.jpg",
+    "crop": "Apple",
+    "disease_name": "Healthy Apple Leaf",
+    "condition_type": "healthy"
+  },
+  {
+    "id": "corn__fungal__common_rust_",
+    "title": "Corn Common Rust",
+    "file_name": "corn__fungal__common_rust_.jpg",
+    "url": "/samples/corn__fungal__common_rust_.jpg",
+    "crop": "Corn",
+    "disease_name": "Common Rust",
+    "condition_type": "fungal"
+  }
+]
