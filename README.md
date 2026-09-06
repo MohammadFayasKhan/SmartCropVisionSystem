@@ -2,20 +2,21 @@
 
 # SmartCropVisionSystem 🌿🔬
 
-**A unified edge IoT telemetry and 3-Tier computer vision platform for real-time crop recommendation and foliar disease diagnosis.**
+**A unified edge IoT telemetry and 3-tier deep computer vision platform for real-time crop recommendation and foliar disease diagnosis.**
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![YOLOv8](https://img.shields.io/badge/Ultralytics-YOLOv8-00599C?style=flat-square)](https://ultralytics.com/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4.2-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![ESP8266](https://img.shields.io/badge/Hardware-ESP8266_NodeMCU-E7352C?style=flat-square&logo=espressif&logoColor=white)](https://www.espressif.com/)
+[![Chart.js](https://img.shields.io/badge/Dashboard-Chart.js_4.4-FF6384?style=flat-square&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
 [![Tests](https://img.shields.io/badge/Tests-10_Passing-22c55e?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
 
 <br/>
 
-<p align="center"><em>Dual-engine agricultural intelligence platform: physical edge IoT telemetry feeding Random Forest crop planning paired with a 3-tier deep vision cascade (MobileNetV2, YOLOv8-nano, Mobile-UNet) for sub-pixel foliar pathology triage.</em></p>
+<p align="center"><em>Dual-engine edge-to-cloud agricultural intelligence: physical micro-climate telemetry feeding Random Forest crop planning paired with a 3-tier deep vision cascade (MobileNetV2, YOLOv8-nano, Mobile-UNet) for sub-pixel foliar pathology triage.</em></p>
 
 </div>
 
@@ -23,9 +24,9 @@
 
 ## 📖 Overview
 
-**SmartCropVisionSystem** is an end-to-end precision agriculture platform designed to solve two interrelated operational challenges faced by modern smallholder farms and agronomic greenhouses:
+**SmartCropVisionSystem** is an end-to-end precision agriculture platform designed to resolve two interrelated operational challenges faced by modern smallholder farms and agronomic greenhouses:
 
-1. **Pre-Planting & Growing Season Intelligence**: Recommending optimal crop selection based on dynamic micro-climate soil-atmospheric conditions while continuously screening for environmental pathogen conditions before physical infections take root.
+1. **Pre-Planting & Growing Season Intelligence**: Recommending optimal crop varieties based on dynamic micro-climate soil-atmospheric conditions while continuously screening for environmental pathogen conditions before physical infections take root.
 2. **In-Season Foliar Diagnostic Cascade**: Accurately diagnosing plant pathologies from leaf photographs without falling victim to the domain shift common in standard machine learning models, where healthy field foliage with natural soil or sunlight variations is misclassified as catastrophic disease.
 
 Rather than relying on isolated single-image classifiers or disconnected microcontroller monitors, SmartCropVisionSystem creates an integrated edge-to-cloud ecosystem:
@@ -37,7 +38,7 @@ Rather than relying on isolated single-image classifiers or disconnected microco
   - **Tier 2 (Localization)**: YOLOv8-nano identifies necrotic infection foci, outputting bounding box coordinates and normalized centroids for targeted variable-rate sprayers.
   - **Tier 3 (Segmentation)**: Mobile-UNet segments healthy leaf lamina from necrotic tissue to quantify the Botanical Damage Index (percentage of damaged leaf area).
 - **Multi-Factor Decision Matrix**: A deterministic arbitration matrix resolves laboratory-versus-field domain shifts by cross-referencing classification probability distributions with spatial lesion counts and segmented damage area, ensuring healthy leaves are never falsely flagged as severe disease.
-- **Single-Page Dashboard**: A dual-panel web interface with a fixed left control panel and independently scrollable right intelligence panel displays live Chart.js sensor trends, camera/file upload dropzones, interactive inspection canvas overlays, and actionable agronomic treatment advice.
+- **Dual-Panel Dashboard**: A responsive web interface with a fixed left control panel and independently scrollable right intelligence panel displays live Chart.js sensor trends, camera/file upload dropzones, interactive inspection canvas overlays, and actionable agronomic treatment advice.
 
 ---
 
@@ -69,7 +70,7 @@ $$\text{Foliar Damage Percentage} = \left( \frac{\sum \text{Pixels}_{\text{lesio
 
   - Encodes a translucent crimson (`#ef233c`) overlay mask in Base64 for instant canvas rendering.
 
-### 3. Multi-Factor Decision Matrix (Healthy Gating)
+### 3. Multi-Factor Decision Matrix (Domain Shift Elimination)
 - **Elimination of Field False Positives**: Standard deep learning classifiers trained on uniform laboratory backgrounds often misclassify healthy field leaves (such as field tomato foliage) as Late Blight or Early Blight due to natural leaf venation, soil mulch, or sunlight highlights.
 - **Deterministic Multi-Tier Arbitration**:
   - **Case A (Explicit Healthy)**: Triggered if top-1 prediction belongs to a healthy botanical class, or if the aggregate probability mass of all healthy classes exceeds the top-1 disease confidence while top-1 confidence is below 65%. Forces clean healthy diagnosis (`is_infected: false`, `damage: 0.0%`, `boxes: []`).
@@ -78,14 +79,14 @@ $$\text{Foliar Damage Percentage} = \left( \frac{\sum \text{Pixels}_{\text{lesio
   - **Case D (Low-Confidence Fallback)**: If overall confidence is below 40%, the system flags the specimen as `Uncertain: Retake Image` to prevent administering incorrect chemical fungicides.
 - **Benchmarked Accuracy**: 98.15% classification accuracy across our 54-specimen validation test suite (53 / 54 correct determinations), achieving 100.00% recall on actual diseases and 96.77% precision.
 
-### 4. Dual-Panel Dashboard Interface
+### 4. Real-Time Dual-Panel Dashboard & Microcontroller Streaming
 - **Fixed Left Control Panel**: Houses physical sensor sliders with real-time numeric readouts, weather preset buttons (Monsoon, Summer, Foggy, Ideal), manual versus live IoT source indicators, and camera/file upload dropzones.
 - **Scrollable Right Intelligence Panel**: Contains server health badges, Chart.js telemetry trend graphs, primary diagnosis result cards, interactive leaf inspection canvas with toggleable bounding boxes and segmentation masks, four-stage triage status indicators, and chemical/cultural treatment advice.
 - **Constrained Edge Microcontroller Protocol**: Exposes a specialized `/predict/compact` endpoint returning single-character JSON keys (`crop`, `conf`, `t2`, `c2`, `t3`, `c3`, `ac`, `alerts`) optimized for low-memory microcontrollers updating 16x2 character displays without stack overflow.
 
 ---
 
-## 🏗 System Architecture
+## 🏗️ Architecture & Execution Flow
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
@@ -98,383 +99,290 @@ $$\text{Foliar Damage Percentage} = \left( \frac{\sum \text{Pixels}_{\text{lesio
 │              │                         │                              │                  │
 │              └─────────────────┐       │       ┌──────────────────────┘                  │
 │                                ▼       ▼       ▼                                         │
-│                     ┌──────────────────────────────────────┐                             │
-│                     │       ESP8266 NodeMCU V3 (160 MHz)   │                             │
-│                     │  - Reads GPIO & Analog ADC0 Bus      │                             │
-│                     │  - Renders Status on 16x2 I2C LCD    │                             │
-│                     │  - Emits JSON Stream over Wi-Fi      │                             │
-│                     └──────────────────┬───────────────────┘                             │
+│                       ┌─────────────────────────────────┐                                │
+│                       │   NodeMCU ESP8266 (ESP-12E)     │                                │
+│                       │   Local 16x2 I2C Character LCD  │                                │
+│                       └────────────────┬────────────────┘                                │
 └────────────────────────────────────────┼─────────────────────────────────────────────────┘
-                                         │  HTTP POST /predict/compact
+                                         │ Wi-Fi HTTP POST (JSON Telemetry Payload)
                                          ▼
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                         FASTAPI UNIFIED APPLICATION BACKEND                              │
+│                               FASTAPI BACKEND GATEWAY (:8000)                            │
 │                                                                                          │
-│   ┌──────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                            FastAPI Application Router                            │   │
-│   │                                                                                  │   │
-│   │   GET  /                        → Serves static dual-panel dashboard UI          │   │
-│   │   POST /predict                 → Tabular Random Forest crop recommendation      │   │
-│   │   POST /predict/compact         → Microcontroller payload with compacted keys    │   │
-│   │   POST /predict/vision          → 3-Tier Computer Vision leaf pathology cascade  │   │
-│   │   GET  /latest                  → Polled by UI for live IoT telemetry stream     │   │
-│   │   GET  /health                  → Service health check and uptime timestamp      │   │
-│   │   GET  /models/status           → Hardware accelerator and loaded model status   │   │
-│   └──────────────┬───────────────────────────────────────────┬───────────────────────┘   │
-│                  │                                           │                           │
-│                  ▼                                           ▼                           │
-│   ┌─────────────────────────────┐             ┌──────────────────────────────────────┐   │
-│   │   Crop Intelligence Engine  │             │   3-Tier Computer Vision Cascade     │   │
-│   │                             │             │                                      │   │
-│   │  • StandardScaler Transform │             │  • Tier 1: MobileNetV2 (38 classes)  │   │
-│   │  • Random Forest Classifier │             │  • Tier 2: YOLOv8-nano (Lesion foci) │   │
-│   │  • Deterministic Pathogen   │             │  • Tier 3: Mobile-UNet (Sub-pixel)   │   │
-│   │    Risk Rule Evaluator      │             │  • Multi-Factor Decision Matrix      │   │
-│   └─────────────────────────────┘             └──────────────────────────────────────┘   │
-│                                                              │                           │
-└──────────────────────────────────────────────────────────────┼───────────────────────────┘
-                                                               │  Real-Time Diagnostic Stream
-                                                               ▼
+│   ┌───────────────────────────┐                  ┌───────────────────────────────────┐   │
+│   │ POST /predict             │                  │ POST /predict/vision              │   │
+│   │ (Environmental Telemetry) │                  │ (Foliar Image Multipart Upload)   │   │
+│   └─────────────┬─────────────┘                  └─────────────────┬─────────────────┘   │
+│                 │                                                  │                     │
+│                 ▼                                                  ▼                     │
+│   ┌───────────────────────────┐                  ┌───────────────────────────────────┐   │
+│   │ Feature Scaler & Encoding │                  │ Image Normalization & Decoding    │   │
+│   │ StandardScaler Mapping    │                  │ Pillow Byte Verification          │   │
+│   └─────────────┬─────────────┘                  └─────────────────┬─────────────────┘   │
+│                 │                                                  │                     │
+│                 ▼                                                  ▼                     │
+│   ┌───────────────────────────┐                  ┌───────────────────────────────────┐   │
+│   │ Random Forest Classifier  │                  │ Tier 1: MobileNetV2 Screening     │   │
+│   │ 100 Trees • 22 Crop Types │                  │ 38 Botanical Conditions (14 Crops)│   │
+│   └─────────────┬─────────────┘                  └─────────────────┬─────────────────┘   │
+│                 │                                                  │                     │
+│                 ▼                                                  ▼                     │
+│   ┌───────────────────────────┐                  ┌───────────────────────────────────┐   │
+│   │ Pathogen Risk Rule Engine │                  │ Tier 2: YOLOv8-Nano Localization  │   │
+│   │ 18 Micro-Climate Triggers │                  │ Spatial Lesion Bounding Boxes     │   │
+│   └─────────────┬─────────────┘                  └─────────────────┬─────────────────┘   │
+│                 │                                                  │                     │
+│                 │                                                  ▼                     │
+│                 │                                ┌───────────────────────────────────┐   │
+│                 │                                │ Tier 3: Mobile-UNet Segmentation  │   │
+│                 │                                │ Sub-Pixel Foliar Damage Mask      │   │
+│                 │                                └─────────────────┬─────────────────┘   │
+│                 │                                                  │                     │
+│                 │                                                  ▼                     │
+│                 │                                ┌───────────────────────────────────┐   │
+│                 │                                │ Multi-Factor Decision Matrix      │   │
+│                 │                                │ Lab-to-Field Domain Shift Gating  │   │
+│                 │                                └─────────────────┬─────────────────┘   │
+│                 │                                                  │                     │
+│                 └──────────────────────┐   ┌───────────────────────┘                     │
+│                                        ▼   ▼                                             │
+│                       ┌─────────────────────────────────────┐                            │
+│                       │ Actionable Agronomic Advisory Engine│                            │
+│                       │ Chemical & Cultural Action Protocols│                            │
+│                       └──────────────────┬──────────────────┘                            │
+└──────────────────────────────────────────┼───────────────────────────────────────────────┘
+                                           │ Structured JSON Payloads & Base64 Overlays
+                                           ▼
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                            SINGLE-PAGE WEB DASHBOARD UI                                  │
+│                         SINGLE-PAGE RESPONSIVE DASHBOARD                                 │
 │                                                                                          │
-│   ┌────────────────────────────────────────┐  ┌──────────────────────────────────────┐   │
-│   │      FIXED LEFT CONTROL PANEL          │  │   SCROLLABLE RIGHT INTELLIGENCE      │   │
-│   │                                        │  │                                      │   │
-│   │  • Mode Switcher (Crop / Vision)       │  │  • Server Status & Live Hardware     │   │
-│   │  • Sensor Sliders & Live Numeric Read  │  │  • Chart.js Multi-Sensor Trend Graph │   │
-│   │  • Weather Presets (Monsoon, Summer)   │  │  • Primary Diagnosis & Top-3 Prob    │   │
-│   │  • Camera & Drag/Drop Upload Area      │  │  • Interactive Canvas Overlay        │   │
-│   │  • Quick Foliage Test Scenarios        │  │  • 4-Stage Severity Triage Banner    │   │
-│   │  • One-Click Analysis Execution Button │  │  • Agronomic Treatment Protocols     │   │
-│   └────────────────────────────────────────┘  └──────────────────────────────────────┘   │
+│   ┌────────────────────────────────────────┐ ┌───────────────────────────────────────┐   │
+│   │ Fixed Left Control Panel               │ │ Scrollable Right Intelligence Panel   │   │
+│   │ ├─ Interactive Telemetry Sliders       │ │ ├─ Real-Time Chart.js Rolling Trends  │   │
+│   │ ├─ Micro-Climate Simulation Presets    │ │ ├─ Primary Crop Recommendation Cards  │   │
+│   │ ├─ Live IoT Feed Status Chip           │ │ ├─ Pathogen Alert Cards with Triggers │   │
+│   │ └─ Drag & Drop Image Dropzone          │ │ ├─ Leaf Inspection Canvas with BBoxes │   │
+│   │                                        │ │ └─ 4-Stage Severity Triage Protocols  │   │
+│   └────────────────────────────────────────┘ └───────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚡ Execution & Data Flow
+## 🛠 Tech Stack
 
-```
-[IoT Sensors / Sliders] ──(Temp, Hum, Soil, Rain)──→ [StandardScaler]
-                                                             │
-                                                             ▼
-                                                    [Random Forest Model]
-                                                             │
-                                                             ├──→ Top-1 Crop + Confidence %
-                                                             └──→ Top-3 Viability Alternatives
-                                                             │
-[Agronomic Rule Engine] ←──(Live Telemetry Values)───────────┤
-          │
-          └──→ Active Pathogen Alerts (CRITICAL, HIGH, MODERATE, WATCH)
-          
-────────────────────────────────────────────────────────────────────────────────────────
-
-[Foliar Leaf Photo] ──(Multipart Upload)──→ [PIL Header Validation & Decode]
-                                                            │
-                                  ┌─────────────────────────┴────────────────────────┐
-                                  ▼                                                  ▼
-                        [Tier 1: MobileNetV2]                             [Tier 2: YOLOv8-Nano]
-                      (Softmax 38-Class Vector)                         (Lesion Bounding Boxes)
-                                  │                                                  │
-                                  ▼                                                  │
-                        [Tier 3: Mobile-UNet]                                        │
-                     (Semantic Pixel Segmentation)                                   │
-                                  │                                                  │
-                                  ├──────────────────────────────────────────────────┘
-                                  ▼
-                    [Multi-Factor Decision Matrix]
-                                  │
-            ┌─────────────────────┼─────────────────────┐
-            ▼                     ▼                     ▼
-     [Case A: Healthy]     [Case B: Disease]    [Case C/D: Guard]
-     - Zero damage %       - Confirmed stage    - False alert refuted
-     - Empty boxes         - Merged foci boxes  - Marked as Uncertain
-     - Optimal advisory    - Chemical treatment - Request clearer photo
-```
-
----
-
-## 🛠 Technology Stack
-
-### Backend & Machine Learning
-- **Python 3.10+**: Core programming environment.
-- **FastAPI & Starlette**: High-throughput asynchronous REST API framework.
-- **Uvicorn**: ASGI web server implementation.
-- **PyTorch 2.0+**: Deep learning runtime powering MobileNetV2 and Mobile-UNet inference with Apple Silicon GPU (`mps`), NVIDIA CUDA (`cuda`), and CPU device autoselection.
-- **Ultralytics YOLOv8**: Real-time bounding box object detection for foliar lesion localization.
-- **Scikit-Learn 1.4.2**: Random Forest tabular classifier, StandardScaler preprocessing pipeline, and LabelEncoder target mapping.
-- **OpenCV & Pillow**: Sub-pixel morphological clustering, connected component labeling, image validation, and dynamic alpha mask rendering.
-- **NumPy & Pandas**: Matrix computation, probability aggregation, and tabular feature preparation.
-
-### Frontend Dashboard
-- **HTML5**: Semantic dual-panel architecture.
-- **Vanilla CSS3**: Glassmorphism aesthetic, tailored CSS custom properties, fixed control panel, and independently scrollable intelligence panel.
-- **Vanilla JavaScript (ES6+)**: Zero framework overhead, asynchronous Fetch API, state machine for IoT polling, and dynamic HTML injection.
-- **HTML5 Canvas API**: Interactive high-resolution bounding box rendering, scaled coordinate transforms, and responsive mask overlay compositing.
-- **Chart.js 4.4**: Animated real-time stepped and spline line charts for environmental sensor trends.
-
-### Embedded IoT Hardware
-- **ESP8266 NodeMCU V3 (ESP-12E)**: 160 MHz Tensilica Xtensa LX106 Wi-Fi microcontroller.
-- **DHT11**: Digital air temperature and relative humidity sensor.
-- **Capacitive Soil Moisture Sensor v1.2**: Corrosion-resistant analog moisture probe connected to ADC0.
-- **YL-83 Rain Sensor Plate**: Gold-plated resistive grid with LM393 comparator providing binary digital rain detection.
-- **16x2 Character LCD (HD44780 + PCF8574 I2C Backpack)**: Real-time on-device status output.
+| Category | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Edge Hardware** | **ESP8266 NodeMCU (ESP-12E)** | Low-cost Wi-Fi microcontroller for real-time ambient telemetry sampling |
+| **Sensors & Display** | **DHT11, YL-83, Capacitive Soil, 16x2 I2C LCD** | Ambient temp/humidity, rain detection, volumetric moisture, and local field display |
+| **Backend Framework** | **FastAPI 0.104+, Uvicorn** | High-performance asynchronous REST API and edge microcontroller compact streaming |
+| **Machine Learning** | **Scikit-Learn 1.4.2** | 100-estimator Random Forest classifier for 22-class crop viability recommendation |
+| **Deep Learning** | **PyTorch 2.0+ (Torchvision)** | MobileNetV2 38-class classifier and Mobile-UNet semantic segmentation engine |
+| **Object Detection** | **Ultralytics YOLOv8-Nano** | Spatial necrotic lesion localization, centroid tracking, and bounding box regression |
+| **Foliar Segmentation** | **Mobile-UNet (3-Class)** | Sub-pixel leaf lamina vs lesion pixel segmentation and Botanical Damage Index |
+| **Frontend UI** | **Vanilla HTML5, CSS3, ES6+ JavaScript** | Modern dual-panel layout with fixed controls, glassmorphic styling, and dark mode tokens |
+| **Data Visualization** | **Chart.js 4.4** | Real-time rolling telemetry trend graphs for temperature, humidity, and soil moisture |
+| **Image Processing** | **Pillow (PIL), OpenCV (cv2)** | Image decoding, EXIF handling, color space transforms, and Base64 mask encoding |
+| **Containerization** | **Docker (python:3.10-slim)** | Standardized container packaging with exposed ports 8000 and 7860 |
+| **Automated Testing** | **Pytest 9.0+** | Complete test suite validating API contracts, ML models, and healthy gating (10 passing) |
 
 ---
 
 ## 📁 Project Structure
 
-```text
-.
-├── main.py                          # Unified FastAPI application entry point
-├── vision_engine.py                 # 3-Tier Computer Vision inference cascade & decision matrix
-├── disease_engine.py                # Deterministic agronomic pathogen risk engine (18 rules)
-├── predict.py                       # Random Forest crop recommendation inference pipeline
-├── models/                          # Production ML model checkpoints
-│   ├── crop_model.pkl               # 100-tree Random Forest classifier (22 crops, 19.5 MB)
-│   ├── scaler.pkl                   # StandardScaler for environmental sensor features
-│   ├── label_encoder.pkl            # LabelEncoder mapping indices to 22 crop names
-│   ├── feature_names.pkl            # Serialized feature list for tabular validation
-│   ├── mobilenet_v2_38classes_best.pth # Tier 1: 38-class MobileNetV2 classifier (8.9 MB)
-│   ├── yolov8n_lesions_best.pt      # Tier 2: YOLOv8-nano necrotic lesion detector (5.9 MB)
-│   ├── mobile_unet_lesions_best.pth # Tier 3: Mobile-UNet sub-pixel pathology segmenter (1.9 MB)
-│   └── yolov8n_plantdoc_best.pt     # Auxiliary YOLOv8 PlantDoc detector checkpoint (23.3 MB)
+```
+smart-crop-intelligene-system-main-repo/
 ├── configs/
-│   └── taxonomy_38classes.json      # 38-class botanical condition metadata & label index
-├── static/                          # Production Web Dashboard
-│   ├── index.html                   # Dual-panel dashboard layout (fixed left, scrollable right)
-│   ├── style.css                    # Dark-green theme, custom responsive grid, inspection canvas
-│   ├── app.js                       # IoT telemetry polling, Chart.js graphs, canvas overlays
-│   └── samples/                     # Pre-loaded field test specimens (healthy & diseased)
-│       ├── tomato__fungal__early_blight.jpg  # Early Blight diseased sample
-│       ├── potato__healthy__healthy.jpg      # Healthy potato sample
-│       ├── corn__fungal__common_rust_.jpg    # Common Rust diseased sample
-│       ├── grape__fungal__black_rot.jpg      # Black Rot diseased sample
-│       ├── apple__healthy__healthy.jpg       # Healthy apple sample
-│       ├── user_healthy_tomato.jpg           # Field tomato healthy test specimen
-│       └── samples.json                      # Sample catalog metadata
-├── esp8266_firmware.ino             # Production C++ firmware for NodeMCU + DHT11 + LCD + Sensors
-├── Crop_Recommendation.csv          # Agronomic training dataset (2,200 samples, 22 crops)
-├── SmartCropIntelligenceSystem.ipynb# Model training, validation, and feature analysis notebook
-├── test_integration.py              # Automated test suite for backend & vision pipeline
-├── Dockerfile                       # Container definition for containerized/cloud deployments
-├── start.sh                         # Lifespan startup and self-check launch script
-├── requirements.txt                 # Pinned production Python dependencies
-├── .gitignore                       # Clean production ignore definitions
-└── README.md                        # Comprehensive system documentation
+│   └── taxonomy_38classes.json                  # Complete 38-class botanical condition mapping
+│
+├── models/                                      # Centralized machine learning model checkpoints
+│   ├── crop_model.pkl                           # Random Forest 100-tree crop viability estimator
+│   ├── scaler.pkl                               # Scikit-Learn StandardScaler for sensor inputs
+│   ├── label_encoder.pkl                        # Crop class label encoder (22 botanical varieties)
+│   ├── feature_names.pkl                        # Input feature schema manifest
+│   ├── mobilenet_v2_38classes_best.pth          # Tier 1: 38-class MobileNetV2 classification checkpoint
+│   ├── yolov8n_lesions_best.pt                  # Tier 2: YOLOv8-nano necrotic lesion localization weights
+│   ├── mobile_unet_lesions_best.pth             # Tier 3: Mobile-UNet 3-class foliar damage segmentation
+│   └── yolov8n_plantdoc_best.pt                 # Experimental PlantDoc research checkpoint
+│
+├── static/                                      # Responsive web dashboard frontend
+│   ├── index.html                               # Dual-panel dashboard markup and component anchors
+│   ├── style.css                                # Design tokens, glassmorphism, and responsive layout
+│   ├── app.js                                   # State coordination, Chart.js trends, and canvas overlay
+│   └── samples/                                 # Multi-crop foliar evaluation and validation samples
+│       ├── apple__healthy__healthy.jpg          # Healthy apple foliar control
+│       ├── corn__fungal__common_rust_.jpg       # Active Common Rust infection specimen
+│       ├── grape__fungal__black_rot.jpg         # Grape Black Rot necrotic specimen
+│       ├── potato__healthy__healthy.jpg         # Healthy potato control
+│       ├── tomato__fungal__early_blight.jpg     # Tomato Early Blight severe lesion specimen
+│       ├── user_healthy_tomato.jpg              # Real field healthy tomato leaf (domain shift test)
+│       └── samples.json                         # Ground-truth sample metadata and expected outputs
+│
+├── Crop_Recommendation.csv                      # Canonical crop viability training dataset
+├── Dockerfile                                   # Production container runtime definition
+├── SmartCropIntelligenceSystem.ipynb            # Original research, model training, and evaluation notebook
+├── disease_engine.py                            # Deterministic environmental pathogen risk rule engine
+├── esp8266_firmware.ino                         # C++ firmware for NodeMCU ESP8266 with 16x2 LCD display
+├── main.py                                      # Unified FastAPI backend application and endpoints
+├── predict.py                                   # Random Forest crop recommendation inference pipeline
+├── requirements.txt                             # Python runtime dependency manifest
+├── start.sh                                     # Automated execution launcher script
+├── test_integration.py                          # Automated regression and edge case test suite
+└── vision_engine.py                             # 3-tier deep computer vision and decision matrix cascade
 ```
 
 ---
 
-## 🚀 Installation & Setup
+## ⚙️ Installation & Local Development
 
 ### Prerequisites
-- **Python 3.10** or higher
-- **pip** and **virtualenv**
-- Optional: Arduino IDE 2.0+ (if deploying physical ESP8266 IoT hardware)
+
+- [Python 3.10+](https://www.python.org/)
+- [NodeMCU ESP8266](https://www.espressif.com/) and [Arduino IDE](https://www.arduino.cc/en/software) (optional, for physical hardware sensing)
+- Modern web browser (Chrome, Firefox, Safari, Edge)
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/MohammadFayasKhan/SmartCropVisionSystem.git
 cd SmartCropVisionSystem
 ```
 
-### 2. Configure Python Virtual Environment
+### 2. Environment Configuration
+
+Copy the example environment configuration:
+
+```bash
+cp .env.example .env
+```
+
+Review `.env` to configure your runtime parameters:
+
+```ini
+HOST=0.0.0.0
+PORT=8000
+DEBUG=False
+DEVICE_TARGET=cpu
+```
+
+### 3. Install Backend Dependencies
+
+Create a clean virtual environment and install the locked dependencies:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Launch Application
-Start the unified FastAPI server:
+### 4. Start the Application
+
+Launch the unified FastAPI application using the automated launcher or Uvicorn:
+
 ```bash
+# Option A: Automated launcher script
+chmod +x start.sh
+./start.sh
+
+# Option B: Direct Uvicorn invocation
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-Open your browser and navigate to:
-```text
-http://127.0.0.1:8000
-```
-The dashboard will load immediately with the interactive crop recommendation controls and computer vision leaf pathology inspection canvas.
+
+Open your browser and navigate to `http://localhost:8000` to access the interactive dashboard.
+
+### 5. (Optional) Edge Microcontroller Hardware Setup
+
+To connect a physical ESP8266 NodeMCU edge node:
+
+1. Open `esp8266_firmware.ino` in the Arduino IDE.
+2. Install required board packages and libraries via the Library Manager:
+   - **ESP8266 Board Package**: `esp8266 by ESP8266 Community`
+   - **DHT Sensor Library**: `DHT sensor library by Adafruit`
+   - **LiquidCrystal I2C**: `LiquidCrystal I2C by Frank de Brabander`
+3. Configure your Wi-Fi credentials and local machine IP in `esp8266_firmware.ino`:
+   ```cpp
+   const char* ssid     = "YOUR_WIFI_SSID";
+   const char* password = "YOUR_WIFI_PASSWORD";
+   const char* serverUrl = "http://192.168.1.100:8000/predict/compact";
+   ```
+4. Wire the sensors to your NodeMCU according to the hardware pinout:
+   - **DHT11 Data**: Pin `D4` (GPIO2)
+   - **Capacitive Soil Moisture**: Pin `A0` (Analog In)
+   - **YL-83 Rain Sensor**: Pin `D7` (GPIO13)
+   - **16x2 I2C LCD**: SDA to Pin `D2` (GPIO4), SCL to Pin `D1` (GPIO5)
+5. Flash the sketch to your NodeMCU (NodeMCU 1.0 ESP-12E Module). The dashboard will automatically reflect live telemetry.
 
 ---
 
-## 🔬 Computer Vision Pathology Cascade
+## 🧪 Testing & Verification Matrix
 
-### Taxonomy & Supported Classes
-The Tier 1 MobileNetV2 model classifies foliage across 38 distinct botanical conditions:
+The repository features a comprehensive automated integration test suite validating API schemas, model loading, crop recommendation logic, 3-tier vision pipelines, domain-shift healthy gating, and edge microcontroller compact streaming:
 
-| Crop Species | Supported Health & Pathology Conditions |
-| :--- | :--- |
-| **Apple** | Apple Scab, Black Rot, Cedar Apple Rust, Healthy |
-| **Blueberry** | Healthy |
-| **Cherry** | Powdery Mildew, Healthy |
-| **Corn (Maize)** | Cercospora Gray Leaf Spot, Common Rust, Northern Leaf Blight, Healthy |
-| **Grape** | Black Rot, Esca (Black Measles), Leaf Blight (Isariopsis), Healthy |
-| **Orange** | Huanglongbing (Citrus Greening) |
-| **Peach** | Bacterial Spot, Healthy |
-| **Bell Pepper** | Bacterial Spot, Healthy |
-| **Potato** | Early Blight, Late Blight, Healthy |
-| **Raspberry** | Healthy |
-| **Soybean** | Healthy |
-| **Squash** | Powdery Mildew |
-| **Strawberry** | Leaf Scorch, Healthy |
-| **Tomato** | Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Two-Spotted Spider Mite, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy |
-
-### Model Checkpoints Summary
-All model checkpoints are committed and self-contained inside the `models/` directory:
-
-| Model Tier | Checkpoint Path | Architecture | Input Resolution | Size | Memory Device |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Crop Intelligence** | `models/crop_model.pkl` | Random Forest (100 Trees) | 3 Numerical Features | 19.5 MB | Host CPU / RAM |
-| **Vision Tier 1** | `models/mobilenet_v2_38classes_best.pth` | MobileNetV2 (38 Classes) | 224 × 224 × 3 | 8.9 MB | MPS / CUDA / CPU |
-| **Vision Tier 2** | `models/yolov8n_lesions_best.pt` | YOLOv8-Nano (Lesion Foci) | 640 × 640 × 3 | 5.9 MB | MPS / CUDA / CPU |
-| **Vision Tier 3** | `models/mobile_unet_lesions_best.pth` | Mobile-UNet (3 Classes) | 256 × 256 × 3 | 1.9 MB | Production Validated |
-| **PlantDoc Field** | `models/yolov8n_plantdoc_best.pt` | YOLOv8-Nano (PlantDoc) | 640 × 640 × 3 | 23.3 MB | Experimental (Halted at Epoch 3) |
-
-> [!NOTE]
-> PlantDoc training was halted after early epochs due to device memory constraints (reaching ~0.048 mAP50). It is preserved strictly as an auxiliary checkpoint. Production lesion localization is driven by the fully trained `models/yolov8n_lesions_best.pt` (15 epochs, 0.337 mAP50) fused with Mobile-UNet segmentation clusters.
-
-### Device Gating & Autoselection
-At application startup, `VisionInferenceEngine` initializes compute devices automatically:
-1. **Apple Silicon GPU (`mps`)** if running on macOS with Apple Silicon.
-2. **NVIDIA GPU (`cuda`)** if a compatible CUDA device is detected.
-3. **Host CPU (`cpu`)** as universal fallback.
-
-Weights are pre-cached in memory during server lifespan initialization, ensuring subsequent requests execute in 50ms to 150ms total latency.
-
----
-
-## 📡 Hardware & Edge IoT Setup
-
-### Pinout Mapping
-The production firmware in `esp8266_firmware.ino` connects to standard agricultural sensors:
-
-| Hardware Module | NodeMCU Pin | GPIO | Protocol / Function |
-| :--- | :--- | :--- | :--- |
-| **DHT11 Air Temp/Humidity** | `D4` | `GPIO 2` | 1-Wire Digital Telemetry |
-| **Capacitive Soil Moisture** | `A0` | `ADC0` | 10-bit Analog Voltage (0 - 1023) |
-| **YL-83 Rain Sensor Board** | `D7` | `GPIO 13`| Digital Input (LOW = Raining, HIGH = Dry) |
-| **16x2 LCD SDA** | `D2` | `GPIO 4` | I2C Data Line |
-| **16x2 LCD SCL** | `D1` | `GPIO 5` | I2C Clock Line |
-| **Sensor Power (VCC)** | `3V3` / `VIN`| - | 3.3V (DHT11/Soil) or 5V (LCD/YL-83) |
-| **Ground (GND)** | `GND` | - | Common System Ground |
-
-### Microcontroller Configuration
-1. Open `esp8266_firmware.ino` in Arduino IDE.
-2. Configure your local Wi-Fi credentials and server host address:
-```cpp
-const char* ssid     = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
-const char* host     = "192.168.1.100";  // IP address of host machine running backend
-const int   port     = 8000;
-```
-3. Install required Arduino libraries:
-   - `ESP8266WiFi`
-   - `ESP8266HTTPClient`
-   - `DHT sensor library` (Adafruit)
-   - `LiquidCrystal_I2C` (Frank de Brabander)
-   - `ArduinoJson` (v6 or v7)
-4. Compile and flash to your NodeMCU board (NodeMCU 1.0 ESP-12E Module).
-
----
-
-## 🔌 API Reference
-
-### 1. Health & System Status
-- **`GET /health`**
-  - Returns server status, version, and timestamp.
-- **`GET /models/status`**
-  - Returns hardware accelerator device, loaded models, and class counts.
-
-### 2. Environmental Crop Recommendation
-- **`POST /predict`**
-  - **Request Body**:
-    ```json
-    {
-      "temperature": 27.5,
-      "humidity": 78.0,
-      "soil_moisture": 62.0,
-      "rain": 1
-    }
-    ```
-  - **Response Body**:
-    ```json
-    {
-      "timestamp": "2026-09-07T00:35:00.000000",
-      "recommended_crop": "rice",
-      "confidence": 84.5,
-      "top3": [
-        {"crop": "rice", "confidence": 84.5},
-        {"crop": "jute", "confidence": 11.2},
-        {"crop": "cotton", "confidence": 4.3}
-      ],
-      "disease_alerts": [
-        {
-          "name": "Fungal Blast Risk",
-          "severity": "HIGH",
-          "trigger": "RH > 75% with moderate temp",
-          "pesticide": "Tricyclazole 75% WP",
-          "technique": "Avoid excessive nitrogen fertilizers"
-        }
-      ],
-      "alert_count": 1
-    }
-    ```
-
-### 3. Edge Microcontroller Compact Stream
-- **`POST /predict/compact`**
-  - Designed for low-memory microcontrollers with 16x2 character displays.
-  - Returns single-character JSON keys: `crop`, `conf`, `t2`, `c2`, `t3`, `c3`, `ac`, `alerts`.
-
-### 4. Computer Vision Foliar Diagnosis
-- **`POST /predict/vision`**
-  - **Payload**: `multipart/form-data` with key `file` (JPEG, PNG, or WebP image).
-  - **Response Body**: Returns structured diagnosis, confidence level, top-3 candidates, spatial lesion bounding boxes with normalized coordinates, foliar damage percentage, Base64 translucent overlay mask, and agronomic advisory treatments.
-
----
-
-## 🧪 Testing & Validation Matrix
-
-### Automated Test Suite
-Run the automated integration tests:
 ```bash
-PYTHONPATH=. pytest test_integration.py -v
+pytest test_integration.py -v
 ```
 
-All 10 integration test scenarios pass with complete coverage:
-1. `test_homepage_serves_unified_system`: Validates dual-panel HTML structure and component mount points.
-2. `test_server_health`: Validates `/health` online status and ISO timestamp formatting.
-3. `test_models_status`: Validates runtime hardware report, loaded model classes, and experimental model tags.
-4. `test_crop_recommendation_prediction`: Validates Random Forest inference, top-3 probabilities, and disease risk engine.
-5. `test_vision_early_blight_diagnosis`: Validates 3-tier cascade and Stage 3 severe triage on real infected foliage.
-6. `test_vision_healthy_foliage_fast_gating`: Validates decision matrix healthy gating on healthy field tomato leaves.
-7. `test_vision_invalid_mime_type`: Validates rejection of non-image MIME types with HTTP 400.
-8. `test_vision_corrupted_image_bytes`: Validates rejection of corrupted or malformed image payloads.
-9. `test_vision_field_tomato_healthy_gating`: Validates decision matrix healthy gating on field tomato leaf with natural venation.
-10. `test_esp8266_compact_prediction`: Validates constrained edge microcontroller compact stream response schema.
+### Test Coverage Summary
+
+| Test Suite | Focus Area | Status |
+| :--- | :--- | :--- |
+| `test_homepage_serves_unified_system` | Dual-panel HTML structure, DOM containers, script mounts | ✅ Passed |
+| `test_server_health` | FastAPI health probe, online status, ISO timestamp formatting | ✅ Passed |
+| `test_models_status` | Runtime hardware accelerator report, model counts, experimental tags | ✅ Passed |
+| `test_crop_recommendation_prediction` | Random Forest inference, top-3 crop probabilities, disease alerts | ✅ Passed |
+| `test_vision_early_blight_diagnosis` | 3-tier cascade and Stage 3 severe triage on verified infected foliage | ✅ Passed |
+| `test_vision_healthy_foliage_fast_gating` | Fast-path decision matrix gating on healthy lab foliage | ✅ Passed |
+| `test_vision_invalid_mime_type` | Security validation rejecting non-image payloads with HTTP 400 | ✅ Passed |
+| `test_vision_corrupted_image_bytes` | Pillow byte verification rejecting truncated or malformed images | ✅ Passed |
+| `test_vision_field_tomato_healthy_gating` | Multi-factor arbitration refuting false disease on field foliage | ✅ Passed |
+| `test_esp8266_compact_prediction` | Constrained edge microcontroller single-character JSON stream | ✅ Passed |
 
 ---
 
-## 🔒 Security & Privacy Considerations
+## 🔒 Privacy & Security Disclosures
 
-- **No Hardcoded Secrets**: Wi-Fi network credentials and host IP addresses use standard development placeholders (`YOUR_WIFI_SSID`, `YOUR_WIFI_PASSWORD`, `192.168.1.100`).
-- **Strict Multipart Upload Validation**: Uploaded files undergo two-phase verification. MIME types are validated against allowed headers, and raw image bytes are inspected by Pillow to prevent decompression bomb attacks and malformed payload injection.
-- **Local-First On-Premise Execution**: The entire inference cascade runs locally on the host machine using PyTorch and Scikit-Learn. Foliar images and sensor streams are never transmitted to external third-party cloud APIs.
-
----
-
-## ⚠️ Limitations & Future Roadmap
-
-- **Single-Leaf Focus**: The current vision pipeline is optimized for close-up photographs of individual leaves. Whole-canopy drone surveillance requires wide-angle orthomosaic tiling models.
-- **Extreme Weather Sensors**: The rain sensor outputs a binary digital signal (wet/dry) rather than rainfall accumulation. Integrating an optical tipping-bucket rain gauge would provide continuous millimetric precipitation inputs.
-- **Multi-Crop Expansion**: Future iterations will extend semantic segmentation masks beyond solanaceous crops to include cereal rusts, cucurbit downy mildews, and citrus canker lesions.
+- **Zero Cloud Data Leakage**: The entire inference cascade runs locally on the host machine using PyTorch and Scikit-Learn. Foliar images and environmental sensor readings are never transmitted to external commercial cloud APIs.
+- **Strict Multipart Upload Validation**: Uploaded files undergo strict two-phase inspection. MIME types are validated against allowed image formats (`image/jpeg`, `image/png`, `image/webp`), and raw byte streams are verified by Pillow to prevent image decompression bombs and shell injection.
+- **Safe Fallback & Anti-Poisoning Gating**: If an image has poor lighting or ambiguous classification (< 40% confidence), the system safely returns `Uncertain: Retake Image` rather than guessing a false diagnosis, preventing accidental chemical over-application.
+- **Zero Hardcoded Secrets**: All network configurations and hardware endpoints use clean environment variables with safe defaults, preventing accidental leakage of network credentials.
 
 ---
 
-## 📄 License & Authorship
+## 💡 Why I Built This
 
-Distributed under the MIT License. Developed and maintained by **Mohammad Fayas Khan**.
-Contributions and suggestions are welcome via issues and pull requests on GitHub.
+As a Computer Science & Engineering student passionate about the intersection of Edge IoT and Computer Vision in agriculture, I witnessed firsthand how modern smallholder farmers and greenhouse managers struggle with two critical agricultural bottlenecks:
+
+1. **Environmental Blind Spots**: Soil and weather variations directly influence crop viability and pathogen gestation. Without localized sensor telemetry, farmers apply chemical fertilizers and fungicides reactively after fungal blast or rot has already decimated the canopy.
+2. **The Field Domain Shift Trap**: Commercial vision models trained exclusively on clean, lab-curated leaf datasets (like PlantVillage) perform poorly in real farm environments. Natural leaf veins, dust, shadows, and soil mulch are routinely misclassified as catastrophic diseases like Late Blight. Inexperienced farmers act on these false alarms by spraying costly and ecologically damaging chemical fungicides unnecessarily.
+
+I built **SmartCropVisionSystem** to address these realities through an integrated edge-to-cloud architecture:
+- **Low-Cost Edge Sensing**: Connects low-cost, off-the-shelf microcontrollers (ESP8266 + DHT11 + capacitive soil + rain sensors) directly to predictive ML without needing expensive proprietary weather stations.
+- **3-Tier Diagnostic Cascade**: Dissects foliar pathology into screening (MobileNetV2), spatial localization (YOLOv8-nano), and sub-pixel damage segmentation (Mobile-UNet).
+- **Fail-Safe Decision Arbitration**: Implements a deterministic multi-factor decision matrix that prevents false alarms, ensures healthy leaves are never diagnosed with phantom infections, and recommends chemical treatments only when physical lesions are confirmed.
+
+---
+
+## 👨💻 Author
+
+<div align="center">
+  <h3><strong>Mohammad Fayas Khan</strong></h3>
+  <p><em>B.Tech Computer Science Engineering Student • Lovely Professional University</em></p>
+
+  <p>
+    <a href="https://www.linkedin.com/in/mohammadfayaskhan/" target="_blank">
+      <img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+    </a>&nbsp;
+    <a href="https://github.com/MohammadFayasKhan" target="_blank">
+      <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+    </a>&nbsp;
+    <a href="mailto:fayaskhanmohammad@gmail.com">
+      <img src="https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
+    </a>
+  </p>
+</div>
+
+---
+
+## 📝 License
+
+This project is open-source and licensed under the [MIT License](LICENSE).
