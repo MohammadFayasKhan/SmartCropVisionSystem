@@ -160,3 +160,51 @@ def test_vision_corrupted_image_bytes():
     )
     assert response.status_code == 400
     assert "Corrupt or invalid image file" in response.json()["detail"]
+
+
+def test_vision_field_tomato_healthy_gating():
+    """Verify field tomato leaf with natural variation is correctly recognized as Healthy."""
+    sample_path = os.path.join(SAMPLE_DIR, "user_healthy_tomato.jpg")
+    assert os.path.exists(sample_path), f"Sample missing: {sample_path}"
+
+    with open(sample_path, "rb") as f:
+        file_bytes = f.read()
+
+    response = client.post(
+        "/predict/vision",
+        files={"file": ("user_healthy_tomato.jpg", file_bytes, "image/jpeg")}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+
+    diag = data["diagnosis"]
+    assert diag["is_infected"] is False
+    assert "healthy" in diag["condition_type"].lower()
+    assert diag["foliar_damage_pct"] == 0.0
+    assert diag["lesion_foci_count"] == 0
+    assert "STAGE 0" in diag["triage_stage"]
+    assert len(data["spatial_telemetry"]["bounding_boxes"]) == 0
+
+
+def test_esp8266_compact_prediction():
+    """Verify constrained edge microcontroller /predict/compact endpoint response schema."""
+    payload = {
+        "temperature": 26.0,
+        "humidity": 65.0,
+        "soil_moisture": 55.0,
+        "rain": 0
+    }
+    response = client.post("/predict/compact", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "crop" in data
+    assert "conf" in data
+    assert "t2" in data
+    assert "c2" in data
+    assert "t3" in data
+    assert "c3" in data
+    assert "ac" in data
+    assert "alerts" in data
+    assert isinstance(data["conf"], (int, float))
+

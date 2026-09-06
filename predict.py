@@ -27,7 +27,11 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _load(fname):
-    return joblib.load(os.path.join(BASE_DIR, fname))
+    """Loads serialized pipeline artifact from models/ or base directory."""
+    candidate = os.path.join(BASE_DIR, "models", fname)
+    if not os.path.exists(candidate):
+        candidate = os.path.join(BASE_DIR, fname)
+    return joblib.load(candidate)
 
 # ── load all pipeline artifacts once at import time ────────────────────
 model         = _load("crop_model.pkl")

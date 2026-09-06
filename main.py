@@ -269,15 +269,16 @@ async def predict_vision(file: UploadFile = File(...)):
 
 @app.get("/models/status")
 def models_status():
-    """Returns runtime status of ML inference engines."""
+    """Returns runtime status of ML inference engines and hardware accelerators."""
     if not vision_engine.is_loaded:
         vision_engine.load_models()
 
     return {
         "status": "online",
         "crop_recommendation": {
-            "model": "RandomForestClassifier",
-            "classes": 22
+            "model": "RandomForestClassifier (100 Trees)",
+            "classes": 22,
+            "status": "production_validated"
         },
         "computer_vision": {
             "is_loaded": vision_engine.is_loaded,
@@ -287,6 +288,14 @@ def models_status():
                 "Tier 1: MobileNetV2 Universal Classifier",
                 "Tier 2: YOLOv8-nano Spatial Lesion Detector",
                 "Tier 3: Mobile-UNet Sub-Pixel Segmenter"
+            ],
+            "experimental_models": [
+                {
+                    "name": "YOLOv8-nano PlantDoc OD",
+                    "checkpoint": "models/yolov8n_plantdoc_best.pt",
+                    "status": "training_interrupted",
+                    "note": "Training halted at epoch 3; retained for research, excluded from production gating"
+                }
             ]
         }
     }

@@ -10,7 +10,7 @@
 [![YOLOv8](https://img.shields.io/badge/Ultralytics-YOLOv8-00599C?style=flat-square)](https://ultralytics.com/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4.2-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![ESP8266](https://img.shields.io/badge/Hardware-ESP8266_NodeMCU-E7352C?style=flat-square&logo=espressif&logoColor=white)](https://www.espressif.com/)
-[![Tests](https://img.shields.io/badge/Tests-8_Passing-22c55e?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org/)
+[![Tests](https://img.shields.io/badge/Tests-10_Passing-22c55e?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org/)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
 
 <br/>
@@ -331,8 +331,11 @@ All model checkpoints are committed and self-contained inside the `models/` dire
 | **Crop Intelligence** | `models/crop_model.pkl` | Random Forest (100 Trees) | 3 Numerical Features | 19.5 MB | Host CPU / RAM |
 | **Vision Tier 1** | `models/mobilenet_v2_38classes_best.pth` | MobileNetV2 (38 Classes) | 224 × 224 × 3 | 8.9 MB | MPS / CUDA / CPU |
 | **Vision Tier 2** | `models/yolov8n_lesions_best.pt` | YOLOv8-Nano (Lesion Foci) | 640 × 640 × 3 | 5.9 MB | MPS / CUDA / CPU |
-| **Vision Tier 3** | `models/mobile_unet_lesions_best.pth` | Mobile-UNet (3 Classes) | 256 × 256 × 3 | 1.9 MB | MPS / CUDA / CPU |
-| **PlantDoc Field** | `models/yolov8n_plantdoc_best.pt` | YOLOv8-Nano (PlantDoc) | 640 × 640 × 3 | 23.3 MB | MPS / CUDA / CPU |
+| **Vision Tier 3** | `models/mobile_unet_lesions_best.pth` | Mobile-UNet (3 Classes) | 256 × 256 × 3 | 1.9 MB | Production Validated |
+| **PlantDoc Field** | `models/yolov8n_plantdoc_best.pt` | YOLOv8-Nano (PlantDoc) | 640 × 640 × 3 | 23.3 MB | Experimental (Halted at Epoch 3) |
+
+> [!NOTE]
+> PlantDoc training was halted after early epochs due to device memory constraints (reaching ~0.048 mAP50). It is preserved strictly as an auxiliary checkpoint. Production lesion localization is driven by the fully trained `models/yolov8n_lesions_best.pt` (15 epochs, 0.337 mAP50) fused with Mobile-UNet segmentation clusters.
 
 ### Device Gating & Autoselection
 At application startup, `VisionInferenceEngine` initializes compute devices automatically:
@@ -441,15 +444,17 @@ Run the automated integration tests:
 PYTHONPATH=. pytest test_integration.py -v
 ```
 
-All 8 integration test scenarios pass with complete coverage:
+All 10 integration test scenarios pass with complete coverage:
 1. `test_homepage_serves_unified_system`: Validates dual-panel HTML structure and component mount points.
 2. `test_server_health`: Validates `/health` online status and ISO timestamp formatting.
-3. `test_models_status`: Validates runtime hardware report and loaded model classes.
+3. `test_models_status`: Validates runtime hardware report, loaded model classes, and experimental model tags.
 4. `test_crop_recommendation_prediction`: Validates Random Forest inference, top-3 probabilities, and disease risk engine.
 5. `test_vision_early_blight_diagnosis`: Validates 3-tier cascade and Stage 3 severe triage on real infected foliage.
 6. `test_vision_healthy_foliage_fast_gating`: Validates decision matrix healthy gating on healthy field tomato leaves.
 7. `test_vision_invalid_mime_type`: Validates rejection of non-image MIME types with HTTP 400.
 8. `test_vision_corrupted_image_bytes`: Validates rejection of corrupted or malformed image payloads.
+9. `test_vision_field_tomato_healthy_gating`: Validates decision matrix healthy gating on field tomato leaf with natural venation.
+10. `test_esp8266_compact_prediction`: Validates constrained edge microcontroller compact stream response schema.
 
 ---
 
