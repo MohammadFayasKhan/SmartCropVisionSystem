@@ -1,0 +1,230 @@
+{
+  "Apple___Apple_scab": {
+    "crop": "Apple",
+    "disease": "Apple scab",
+    "condition_type": "fungal",
+    "common_name": "Apple - Apple scab"
+  },
+  "Apple___Black_rot": {
+    "crop": "Apple",
+    "disease": "Black rot",
+    "condition_type": "fungal",
+    "common_name": "Apple - Black rot"
+  },
+  "Apple___Cedar_apple_rust": {
+    "crop": "Apple",
+    "disease": "Cedar apple rust",
+    "condition_type": "fungal",
+    "common_name": "Apple - Cedar apple rust"
+  },
+  "Apple___healthy": {
+    "crop": "Apple",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Apple (Healthy Leaf)"
+  },
+  "Blueberry___healthy": {
+    "crop": "Blueberry",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Blueberry (Healthy Leaf)"
+  },
+  "Cherry_(including_sour)___Powdery_mildew": {
+    "crop": "Cherry (including sour)",
+    "disease": "Powdery mildew",
+    "condition_type": "fungal",
+    "common_name": "Cherry (including sour) - Powdery mildew"
+  },
+  "Cherry_(including_sour)___healthy": {
+    "crop": "Cherry (including sour)",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Cherry (including sour) (Healthy Leaf)"
+  },
+  "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": {
+    "crop": "Corn (maize)",
+    "disease": "Cercospora leaf spot Gray leaf spot",
+    "condition_type": "fungal",
+    "common_name": "Corn (maize) - Cercospora leaf spot Gray leaf spot"
+  },
+  "Corn_(maize)___Common_rust_": {
+    "crop": "Corn (maize)",
+    "disease": "Common rust",
+    "condition_type": "fungal",
+    "common_name": "Corn (maize) - Common rust"
+  },
+  "Corn_(maize)___Northern_Leaf_Blight": {
+    "crop": "Corn (maize)",
+    "disease": "Northern Leaf Blight",
+    "condition_type": "fungal",
+    "common_name": "Corn (maize) - Northern Leaf Blight"
+  },
+  "Corn_(maize)___healthy": {
+    "crop": "Corn (maize)",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Corn (maize) (Healthy Leaf)"
+  },
+  "Grape___Black_rot": {
+    "crop": "Grape",
+    "disease": "Black rot",
+    "condition_type": "fungal",
+    "common_name": "Grape - Black rot"
+  },
+  "Grape___Esca_(Black_Measles)": {
+    "crop": "Grape",
+    "disease": "Esca (Black Measles)",
+    "condition_type": "fungal",
+    "common_name": "Grape - Esca (Black Measles)"
+  },
+  "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {
+    "crop": "Grape",
+    "disease": "Leaf blight (Isariopsis Leaf Spot)",
+    "condition_type": "fungal",
+    "common_name": "Grape - Leaf blight (Isariopsis Leaf Spot)"
+  },
+  "Grape___healthy": {
+    "crop": "Grape",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Grape (Healthy Leaf)"
+  },
+  "Orange___Haunglongbing_(Citrus_greening)": {
+    "crop": "Orange",
+    "disease": "Haunglongbing (Citrus greening)",
+    "condition_type": "fungal",
+    "common_name": "Orange - Haunglongbing (Citrus greening)"
+  },
+  "Peach___Bacterial_spot": {
+    "crop": "Peach",
+    "disease": "Bacterial spot",
+    "condition_type": "bacterial",
+    "common_name": "Peach - Bacterial spot"
+  },
+  "Peach___healthy": {
+    "crop": "Peach",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Peach (Healthy Leaf)"
+  },
+  "Pepper,_bell___Bacterial_spot": {
+    "crop": "Pepper, bell",
+    "disease": "Bacterial spot",
+    "condition_type": "bacterial",
+    "common_name": "Pepper, bell - Bacterial spot"
+  },
+  "Pepper,_bell___healthy": {
+    "crop": "Pepper, bell",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Pepper, bell (Healthy Leaf)"
+  },
+  "Potato___Early_blight": {
+    "crop": "Potato",
+    "disease": "Early blight",
+    "condition_type": "fungal",
+    "common_name": "Potato - Early blight"
+  },
+  "Potato___Late_blight": {
+    "crop": "Potato",
+    "disease": "Late blight",
+    "condition_type": "fungal",
+    "common_name": "Potato - Late blight"
+  },
+  "Potato___healthy": {
+    "crop": "Potato",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Potato (Healthy Leaf)"
+  },
+  "Raspberry___healthy": {
+    "crop": "Raspberry",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Raspberry (Healthy Leaf)"
+  },
+  "Soybean___healthy": {
+    "crop": "Soybean",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Soybean (Healthy Leaf)"
+  },
+  "Squash___Powdery_mildew": {
+    "crop": "Squash",
+    "disease": "Powdery mildew",
+    "condition_type": "fungal",
+    "common_name": "Squash - Powdery mildew"
+  },
+  "Strawberry___Leaf_scorch": {
+    "crop": "Strawberry",
+    "disease": "Leaf scorch",
+    "condition_type": "fungal",
+    "common_name": "Strawberry - Leaf scorch"
+  },
+  "Strawberry___healthy": {
+    "crop": "Strawberry",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Strawberry (Healthy Leaf)"
+  },
+  "Tomato___Bacterial_spot": {
+    "crop": "Tomato",
+    "disease": "Bacterial spot",
+    "condition_type": "bacterial",
+    "common_name": "Tomato - Bacterial spot"
+  },
+  "Tomato___Early_blight": {
+    "crop": "Tomato",
+    "disease": "Early blight",
+    "condition_type": "fungal",
+    "common_name": "Tomato - Early blight"
+  },
+  "Tomato___Late_blight": {
+    "crop": "Tomato",
+    "disease": "Late blight",
+    "condition_type": "fungal",
+    "common_name": "Tomato - Late blight"
+  },
+  "Tomato___Leaf_Mold": {
+    "crop": "Tomato",
+    "disease": "Leaf Mold",
+    "condition_type": "fungal",
+    "common_name": "Tomato - Leaf Mold"
+  },
+  "Tomato___Septoria_leaf_spot": {
+    "crop": "Tomato",
+    "disease": "Septoria leaf spot",
+    "condition_type": "fungal",
+    "common_name": "Tomato - Septoria leaf spot"
+  },
+  "Tomato___Spider_mites Two-spotted_spider_mite": {
+    "crop": "Tomato",
+    "disease": "Spider mites Two-spotted spider mite",
+    "condition_type": "pest",
+    "common_name": "Tomato - Spider mites Two-spotted spider mite"
+  },
+  "Tomato___Target_Spot": {
+    "crop": "Tomato",
+    "disease": "Target Spot",
+    "condition_type": "fungal",
+    "common_name": "Tomato - Target Spot"
+  },
+  "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
+    "crop": "Tomato",
+    "disease": "Tomato Yellow Leaf Curl Virus",
+    "condition_type": "viral",
+    "common_name": "Tomato - Tomato Yellow Leaf Curl Virus"
+  },
+  "Tomato___Tomato_mosaic_virus": {
+    "crop": "Tomato",
+    "disease": "Tomato mosaic virus",
+    "condition_type": "viral",
+    "common_name": "Tomato - Tomato mosaic virus"
+  },
+  "Tomato___healthy": {
+    "crop": "Tomato",
+    "disease": "healthy",
+    "condition_type": "healthy",
+    "common_name": "Tomato (Healthy Leaf)"
+  }
+}

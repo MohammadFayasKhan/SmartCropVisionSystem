@@ -1,0 +1,59 @@
+{
+  "start_time": 1788923620.1885068,
+  "device": "cpu",
+  "device_name": "Standard CPU",
+  "hardware_policy": {
+    "device": "cpu",
+    "is_gpu": false,
+    "batch_size": 32,
+    "eval_max_samples": 200,
+    "mode": "CPU_REPRESENTATIVE_SAMPLING",
+    "description": "Standard CPU (Evaluation capped to 200 samples to prevent kernel timeout)"
+  },
+  "datasets": {
+    "PlantVillage": 54305,
+    "PlantDoc": 339,
+    "PlantWild": 18542
+  },
+  "models": {
+    "PlantCNN": {
+      "params": 426694,
+      "size_mb": 1.63,
+      "top1_acc": 92.0,
+      "top3_acc": 100.0,
+      "latency_ms": 38.14,
+      "fps": 26.2,
+      "samples": 200
+    },
+    "MobileNetV2": {
+      "params": 2272550,
+      "size_mb": 8.67,
+      "top1_acc": 100.0,
+      "top3_acc": 100.0,
+      "latency_ms": 87.48,
+      "fps": 11.4,
+      "samples": 200
+    },
+    "EfficientNet-B2": {
+      "params": 7754536,
+      "size_mb": 29.58,
+      "top1_acc": 92.5,
+      "top3_acc": 100.0,
+      "latency_ms": 218.87,
+      "fps": 4.6,
+      "samples": 200
+    }
+  },
+  "active_samples": 54305,
+  "tier2_yolo": {
+    "status": "SUCCESS",
+    "latency_ms": 44.94,
+    "lesions_found": 0,
+    "false_alarms": 0
+  },
+  "tier3_segmentation": {
+    "status": "SUCCESS",
+    "latency_ms": 53.64,
+    "damage_pct": 45.92
+  }
+}

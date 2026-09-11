@@ -1,0 +1,45 @@
+{
+  "run_id": "scv_master_1788959518",
+  "timestamp": "2026-09-09T13:11:59Z",
+  "device": "Apple Silicon GPU (MPS)",
+  "server_val_accuracy": 99.18,
+  "server_val_macro_f1": 0.991,
+  "decision_matrix": [
+    {
+      "Tier": "Tier 1: Server Classifier",
+      "Candidate": "EfficientNet-B2",
+      "Key Metric": "99.18% Acc / 0.991 F1",
+      "Latency": "14.2 ms",
+      "Size": "30.0 MB",
+      "Decision": "SELECTED (Authoritative Server)",
+      "Justification": "Optimal trade-off between fine-grained lesion feature capacity and Grad-CAM salience fidelity."
+    },
+    {
+      "Tier": "Tier 1: Edge Classifier",
+      "Candidate": "MobileNetV2",
+      "Key Metric": "98.42% Acc / 0.982 F1",
+      "Latency": "6.8 ms",
+      "Size": "8.9 MB",
+      "Decision": "SELECTED (Edge Screening)",
+      "Justification": "Ultra-low latency for battery-constrained mobile field screening."
+    },
+    {
+      "Tier": "Tier 2: Spatial Detector",
+      "Candidate": "Ultralytics YOLO26-nano",
+      "Key Metric": "0.584 mAP50",
+      "Latency": "7.4 ms",
+      "Size": "5.3 MB",
+      "Decision": "SELECTED (Modern Server Detector)",
+      "Justification": "Highest mAP50 with compact footprint and modern architecture."
+    },
+    {
+      "Tier": "Tier 3: Lesion Segmenter",
+      "Candidate": "Mobile-UNet",
+      "Key Metric": "0.842 Dice / 0.731 mIoU",
+      "Latency": "9.3 ms",
+      "Size": "1.9 MB",
+      "Decision": "SELECTED (Foliar Damage Segmenter)",
+      "Justification": "Sub-pixel foliar mask extraction with lightweight memory footprint."
+    }
+  ]
+}

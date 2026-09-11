@@ -1,0 +1,55 @@
+# Agent workspace configs (local only)
+.agents/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and runtime logs
+.pytest_cache/
+.ipynb_checkpoints/
+*.log
+runs/
+scratch/
+
+# Environment configurations and secrets
+.env
+.env.local
+.env.*.local
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Large raw datasets and archives
+cv/datasets/raw/
+cv/datasets/processed/yolo_plantdoc/
+*.zip
+results/
+results2/
+checkpoints/
+SmartCropVision_release/
+SmartCropVision_release_gen2/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Distribution archives (tracked via Git LFS)
+dist/
+
+# Offline wheel cache
+packages/*.whl

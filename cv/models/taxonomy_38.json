@@ -1,0 +1,382 @@
+[
+  {
+    "class_index": 0,
+    "canonical_id": "apple__fungal__apple_scab",
+    "raw_folder": "Apple___Apple_scab",
+    "crop": "apple",
+    "condition_type": "fungal",
+    "disease_name": "Apple Scab",
+    "scientific_name": "Venturia inaequalis",
+    "linked_engine_id": "apple_scab"
+  },
+  {
+    "class_index": 1,
+    "canonical_id": "apple__fungal__black_rot",
+    "raw_folder": "Apple___Black_rot",
+    "crop": "apple",
+    "condition_type": "fungal",
+    "disease_name": "Black Rot",
+    "scientific_name": "Botryosphaeria obtusa",
+    "linked_engine_id": "black_rot"
+  },
+  {
+    "class_index": 2,
+    "canonical_id": "apple__fungal__cedar_apple_rust",
+    "raw_folder": "Apple___Cedar_apple_rust",
+    "crop": "apple",
+    "condition_type": "fungal",
+    "disease_name": "Cedar Apple Rust",
+    "scientific_name": "Gymnosporangium juniperi-virginianae",
+    "linked_engine_id": "apple_rust"
+  },
+  {
+    "class_index": 3,
+    "canonical_id": "apple__healthy__healthy",
+    "raw_folder": "Apple___healthy",
+    "crop": "apple",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Apple Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 4,
+    "canonical_id": "blueberry__healthy__healthy",
+    "raw_folder": "Blueberry___healthy",
+    "crop": "blueberry",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Blueberry Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 5,
+    "canonical_id": "cherry__fungal__powdery_mildew",
+    "raw_folder": "Cherry_(including_sour)___Powdery_mildew",
+    "crop": "cherry",
+    "condition_type": "fungal",
+    "disease_name": "Powdery Mildew",
+    "scientific_name": "Podosphaera clandestina",
+    "linked_engine_id": "powdery_mildew"
+  },
+  {
+    "class_index": 6,
+    "canonical_id": "cherry__healthy__healthy",
+    "raw_folder": "Cherry_(including_sour)___healthy",
+    "crop": "cherry",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Cherry Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 7,
+    "canonical_id": "corn__fungal__cercospora_leaf_spot_gray_leaf_spot",
+    "raw_folder": "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+    "crop": "corn",
+    "condition_type": "fungal",
+    "disease_name": "Gray Leaf Spot",
+    "scientific_name": "Cercospora zeae-maydis",
+    "linked_engine_id": "gray_leaf_spot"
+  },
+  {
+    "class_index": 8,
+    "canonical_id": "corn__fungal__common_rust",
+    "raw_folder": "Corn_(maize)___Common_rust_",
+    "crop": "corn",
+    "condition_type": "fungal",
+    "disease_name": "Common Rust",
+    "scientific_name": "Puccinia sorghi",
+    "linked_engine_id": "common_rust"
+  },
+  {
+    "class_index": 9,
+    "canonical_id": "corn__fungal__northern_leaf_blight",
+    "raw_folder": "Corn_(maize)___Northern_Leaf_Blight",
+    "crop": "corn",
+    "condition_type": "fungal",
+    "disease_name": "Northern Leaf Blight",
+    "scientific_name": "Exserohilum turcicum",
+    "linked_engine_id": "northern_leaf_blight"
+  },
+  {
+    "class_index": 10,
+    "canonical_id": "corn__healthy__healthy",
+    "raw_folder": "Corn_(maize)___healthy",
+    "crop": "corn",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Corn Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 11,
+    "canonical_id": "grape__fungal__black_rot",
+    "raw_folder": "Grape___Black_rot",
+    "crop": "grape",
+    "condition_type": "fungal",
+    "disease_name": "Black Rot",
+    "scientific_name": "Guignardia bidwellii",
+    "linked_engine_id": "black_rot"
+  },
+  {
+    "class_index": 12,
+    "canonical_id": "grape__fungal__esca_black_measles",
+    "raw_folder": "Grape___Esca_(Black_Measles)",
+    "crop": "grape",
+    "condition_type": "fungal",
+    "disease_name": "Esca (Black Measles)",
+    "scientific_name": "Phaeomoniella chlamydospora",
+    "linked_engine_id": "esca"
+  },
+  {
+    "class_index": 13,
+    "canonical_id": "grape__fungal__leaf_blight_isariopsis_leaf_spot",
+    "raw_folder": "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+    "crop": "grape",
+    "condition_type": "fungal",
+    "disease_name": "Leaf Blight (Isariopsis)",
+    "scientific_name": "Pseudocercospora cladosporioides",
+    "linked_engine_id": "leaf_blight"
+  },
+  {
+    "class_index": 14,
+    "canonical_id": "grape__healthy__healthy",
+    "raw_folder": "Grape___healthy",
+    "crop": "grape",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Grape Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 15,
+    "canonical_id": "orange__bacterial__haunglongbing_citrus_greening",
+    "raw_folder": "Orange___Haunglongbing_(Citrus_greening)",
+    "crop": "orange",
+    "condition_type": "bacterial",
+    "disease_name": "Citrus Greening (HLB)",
+    "scientific_name": "Candidatus Liberibacter",
+    "linked_engine_id": "citrus_greening"
+  },
+  {
+    "class_index": 16,
+    "canonical_id": "peach__bacterial__bacterial_spot",
+    "raw_folder": "Peach___Bacterial_spot",
+    "crop": "peach",
+    "condition_type": "bacterial",
+    "disease_name": "Bacterial Spot",
+    "scientific_name": "Xanthomonas arboricola",
+    "linked_engine_id": "bacterial_spot"
+  },
+  {
+    "class_index": 17,
+    "canonical_id": "peach__healthy__healthy",
+    "raw_folder": "Peach___healthy",
+    "crop": "peach",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Peach Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 18,
+    "canonical_id": "pepper__bacterial__bacterial_spot",
+    "raw_folder": "Pepper,_bell___Bacterial_spot",
+    "crop": "pepper",
+    "condition_type": "bacterial",
+    "disease_name": "Bacterial Spot",
+    "scientific_name": "Xanthomonas campestris",
+    "linked_engine_id": "bacterial_spot"
+  },
+  {
+    "class_index": 19,
+    "canonical_id": "pepper__healthy__healthy",
+    "raw_folder": "Pepper,_bell___healthy",
+    "crop": "pepper",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Pepper Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 20,
+    "canonical_id": "potato__fungal__early_blight",
+    "raw_folder": "Potato___Early_blight",
+    "crop": "potato",
+    "condition_type": "fungal",
+    "disease_name": "Early Blight",
+    "scientific_name": "Alternaria solani",
+    "linked_engine_id": "early_blight"
+  },
+  {
+    "class_index": 21,
+    "canonical_id": "potato__fungal__late_blight",
+    "raw_folder": "Potato___Late_blight",
+    "crop": "potato",
+    "condition_type": "fungal",
+    "disease_name": "Late Blight",
+    "scientific_name": "Phytophthora infestans",
+    "linked_engine_id": "late_blight"
+  },
+  {
+    "class_index": 22,
+    "canonical_id": "potato__healthy__healthy",
+    "raw_folder": "Potato___healthy",
+    "crop": "potato",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Potato Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 23,
+    "canonical_id": "raspberry__healthy__healthy",
+    "raw_folder": "Raspberry___healthy",
+    "crop": "raspberry",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Raspberry Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 24,
+    "canonical_id": "soybean__healthy__healthy",
+    "raw_folder": "Soybean___healthy",
+    "crop": "soybean",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Soybean Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 25,
+    "canonical_id": "squash__fungal__powdery_mildew",
+    "raw_folder": "Squash___Powdery_mildew",
+    "crop": "squash",
+    "condition_type": "fungal",
+    "disease_name": "Powdery Mildew",
+    "scientific_name": "Podosphaera xanthii",
+    "linked_engine_id": "powdery_mildew"
+  },
+  {
+    "class_index": 26,
+    "canonical_id": "strawberry__fungal__leaf_scorch",
+    "raw_folder": "Strawberry___Leaf_scorch",
+    "crop": "strawberry",
+    "condition_type": "fungal",
+    "disease_name": "Leaf Scorch",
+    "scientific_name": "Diplocarpon earlianum",
+    "linked_engine_id": "leaf_scorch"
+  },
+  {
+    "class_index": 27,
+    "canonical_id": "strawberry__healthy__healthy",
+    "raw_folder": "Strawberry___healthy",
+    "crop": "strawberry",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Strawberry Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  },
+  {
+    "class_index": 28,
+    "canonical_id": "tomato__bacterial__bacterial_spot",
+    "raw_folder": "Tomato___Bacterial_spot",
+    "crop": "tomato",
+    "condition_type": "bacterial",
+    "disease_name": "Bacterial Spot",
+    "scientific_name": "Xanthomonas perforans",
+    "linked_engine_id": "bacterial_spot"
+  },
+  {
+    "class_index": 29,
+    "canonical_id": "tomato__fungal__early_blight",
+    "raw_folder": "Tomato___Early_blight",
+    "crop": "tomato",
+    "condition_type": "fungal",
+    "disease_name": "Early Blight",
+    "scientific_name": "Alternaria solani",
+    "linked_engine_id": "early_blight"
+  },
+  {
+    "class_index": 30,
+    "canonical_id": "tomato__fungal__late_blight",
+    "raw_folder": "Tomato___Late_blight",
+    "crop": "tomato",
+    "condition_type": "fungal",
+    "disease_name": "Late Blight",
+    "scientific_name": "Phytophthora infestans",
+    "linked_engine_id": "late_blight"
+  },
+  {
+    "class_index": 31,
+    "canonical_id": "tomato__fungal__leaf_mold",
+    "raw_folder": "Tomato___Leaf_Mold",
+    "crop": "tomato",
+    "condition_type": "fungal",
+    "disease_name": "Leaf Mold",
+    "scientific_name": "Passalora fulva",
+    "linked_engine_id": "leaf_mold"
+  },
+  {
+    "class_index": 32,
+    "canonical_id": "tomato__fungal__septoria_leaf_spot",
+    "raw_folder": "Tomato___Septoria_leaf_spot",
+    "crop": "tomato",
+    "condition_type": "fungal",
+    "disease_name": "Septoria Leaf Spot",
+    "scientific_name": "Septoria lycopersici",
+    "linked_engine_id": "septoria_spot"
+  },
+  {
+    "class_index": 33,
+    "canonical_id": "tomato__pest__spider_mites_two-spotted_spider_mite",
+    "raw_folder": "Tomato___Spider_mites Two-spotted_spider_mite",
+    "crop": "tomato",
+    "condition_type": "pest",
+    "disease_name": "Two-Spotted Spider Mite",
+    "scientific_name": "Tetranychus urticae",
+    "linked_engine_id": "spider_mite"
+  },
+  {
+    "class_index": 34,
+    "canonical_id": "tomato__fungal__target_spot",
+    "raw_folder": "Tomato___Target_Spot",
+    "crop": "tomato",
+    "condition_type": "fungal",
+    "disease_name": "Target Spot",
+    "scientific_name": "Corynespora cassiicola",
+    "linked_engine_id": "target_spot"
+  },
+  {
+    "class_index": 35,
+    "canonical_id": "tomato__viral__tomato_yellow_leaf_curl_virus",
+    "raw_folder": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+    "crop": "tomato",
+    "condition_type": "viral",
+    "disease_name": "Yellow Leaf Curl Virus",
+    "scientific_name": "TYLCV",
+    "linked_engine_id": "yellow_leaf_curl"
+  },
+  {
+    "class_index": 36,
+    "canonical_id": "tomato__viral__tomato_mosaic_virus",
+    "raw_folder": "Tomato___Tomato_mosaic_virus",
+    "crop": "tomato",
+    "condition_type": "viral",
+    "disease_name": "Mosaic Virus",
+    "scientific_name": "ToMV",
+    "linked_engine_id": "mosaic_virus"
+  },
+  {
+    "class_index": 37,
+    "canonical_id": "tomato__healthy__healthy",
+    "raw_folder": "Tomato___healthy",
+    "crop": "tomato",
+    "condition_type": "healthy",
+    "disease_name": "Healthy Tomato Leaf",
+    "scientific_name": "N/A",
+    "linked_engine_id": null
+  }
+]

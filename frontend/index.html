@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Plant Intelligence System</title>
+  <meta name="description" content="IoT-driven real-time crop recommendation and plant disease risk detection dashboard powered by Machine Learning." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css?v=20260910e" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── HEADER ──────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-icon">🌿</div>
+      <div>
+        <h1 class="header-title">Smart Plant Intelligence System</h1>
+        <p class="header-sub">DHT11 + Soil Sensor + Rain Sensor &nbsp;→&nbsp; ML Pipeline &nbsp;→&nbsp; Live Insights</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="mode-switcher" id="modeSwitcher">
+        <button type="button" class="mode-btn active" id="btnModeCrop" onclick="switchMode('crop')">
+          🌾 Crop Intelligence
+        </button>
+        <button type="button" class="mode-btn" id="btnModeVision" onclick="switchMode('vision')">
+          🔬 Plant Vision
+        </button>
+      </div>
+      <div class="server-badge" id="serverBadge" title="FastAPI Backend Status">
+        <span class="badge-dot" id="badgeDot"></span>
+        <span id="badgeText">Connecting to Backend...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── LIVE IOT FEED BAR ────────────────────────────────────── -->
+  <div class="iot-feed-bar" id="iotFeedBar">
+    <div class="iot-feed-inner">
+      <span class="iot-dot" id="iotDot"></span>
+      <span id="iotFeedText">📡 IoT Hardware Sensor Link: Awaiting ESP8266 NodeMCU packets (DHT11, Capacitive Soil, YL-83 Rain) • Manual calibration active</span>
+      <div class="iot-live-values" id="iotLiveValues" style="display:none">
+        <span class="iot-chip" id="chip-t">🌡️ <strong id="iot-t">--</strong>°C</span>
+        <span class="iot-chip" id="chip-h">💧 <strong id="iot-h">--</strong>%</span>
+        <span class="iot-chip" id="chip-s">🌱 <strong id="iot-s">--</strong>%</span>
+        <span class="iot-chip" id="iot-rain-chip">🌧️ <strong id="iot-r">--</strong></span>
+        <span class="iot-chip" id="iot-alerts-chip" style="display:none">🦠 <strong id="iot-ac">0</strong> alerts</span>
+        <span class="iot-ago" id="iotAgo">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN GRID (CROP RECOMMENDATION) ──────────────────────── -->
+  <main class="main-grid" id="cropSection">
+
+    <!-- LEFT COLUMN: Sensor Inputs -->
+    <section class="panel sensor-panel" id="sensorPanel">
+      <div class="panel-header">
+        <span class="panel-icon">📡</span>
+        <h2 class="panel-title">Sensor Inputs</h2>
+        <span class="panel-badge panel-badge-manual" id="sensorSourceBadge">MANUAL</span>
+      </div>
+
+      <div class="sensor-grid">
+
+        <div class="sensor-card" id="card-temp">
+          <div class="sensor-card-header">
+            <span class="sensor-icon">🌡️</span>
+            <span class="sensor-label">Temperature</span>
+            <span class="sensor-unit">°C</span>
+          </div>
+          <div class="sensor-value-display" id="val-temperature">--</div>
+          <input type="range" class="sensor-slider" id="temperature"
+                 min="8" max="44" step="0.5" value="25"
+                 oninput="onManualInput('temperature', this.value)" />
+          <div class="slider-range"><span>8°C</span><span>44°C</span></div>
+        </div>
+
+        <div class="sensor-card" id="card-humidity">
+          <div class="sensor-card-header">
+            <span class="sensor-icon">💧</span>
+            <span class="sensor-label">Humidity</span>
+            <span class="sensor-unit">%</span>
+          </div>
+          <div class="sensor-value-display" id="val-humidity">--</div>
+          <input type="range" class="sensor-slider" id="humidity"
+                 min="14" max="100" step="1" value="65"
+                 oninput="onManualInput('humidity', this.value)" />
+          <div class="slider-range"><span>14%</span><span>100%</span></div>
+        </div>
+
+        <div class="sensor-card" id="card-soil">
+          <div class="sensor-card-header">
+            <span class="sensor-icon">🌱</span>
+            <span class="sensor-label">Soil Moisture</span>
+            <span class="sensor-unit">%</span>
+          </div>
+          <div class="sensor-value-display" id="val-soil_moisture">--</div>
+          <input type="range" class="sensor-slider" id="soil_moisture"
+                 min="0" max="100" step="1" value="50"
+                 oninput="onManualInput('soil_moisture', this.value)" />
+          <div class="slider-range"><span>Dry 0%</span><span>Wet 100%</span></div>
+        </div>
+
+        <div class="sensor-card rain-card" id="card-rain">
+          <div class="sensor-card-header">
+            <span class="sensor-icon">🌧️</span>
+            <span class="sensor-label">Rain Sensor</span>
+            <span class="sensor-unit">YL-83</span>
+          </div>
+          <!-- Binary toggle: mirrors physical sensor digital output -->
+          <button type="button" class="rain-toggle rain-off" id="rainToggle" onclick="toggleRain()" aria-pressed="false">
+            <span class="rain-toggle-icon" id="rainIcon">☀️</span>
+            <span class="rain-toggle-label" id="rainLabel">NO RAIN</span>
+          </button>
+          <div class="rain-hint">Tap to toggle · Syncs with ESP8266</div>
+        </div>
+
+      </div>
+
+      <button type="button" class="predict-btn" id="predictBtn" onclick="runPrediction()">
+        <span class="btn-icon">⚡</span> Get Prediction
+      </button>
+
+      <!-- Preset scenarios -->
+      <div class="presets">
+        <p class="presets-label">Quick Scenarios:</p>
+        <div class="preset-buttons">
+          <button type="button" class="preset-btn" onclick="loadPreset('monsoon')">🌧 Monsoon</button>
+          <button type="button" class="preset-btn" onclick="loadPreset('summer')">☀️ Hot Summer</button>
+          <button type="button" class="preset-btn" onclick="loadPreset('foggy')">🌫 Foggy Cold</button>
+          <button type="button" class="preset-btn" onclick="loadPreset('ideal')">✅ Ideal</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- DRAGGABLE PANEL RESIZER -->
+    <div class="panel-resizer" id="cropResizer" role="separator" aria-orientation="vertical" aria-label="Resize panels" title="Drag to adjust panel widths"></div>
+
+    <!-- RIGHT COLUMN: Results -->
+    <div class="right-column">
+
+      <!-- Crop Recommendation Card -->
+      <section class="panel recommendation-panel" id="recommendationPanel">
+        <div class="panel-header">
+          <span class="panel-icon">🌾</span>
+          <h2 class="panel-title">Crop Recommendation</h2>
+        </div>
+        <div class="recommendation-content" id="recommendationContent">
+          <div class="placeholder-state">
+            <div class="placeholder-icon">🌱</div>
+            <p>Set sensor values and click<br><strong>Get Prediction</strong></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Disease Risk Panel -->
+      <section class="panel disease-panel" id="diseasePanel">
+        <div class="panel-header">
+          <span class="panel-icon">🦠</span>
+          <h2 class="panel-title">Disease Risk Alerts</h2>
+          <span class="alert-count-badge" id="alertCountBadge" style="display:none">0</span>
+        </div>
+        <div class="disease-content" id="diseaseContent">
+          <div class="placeholder-state">
+            <div class="placeholder-icon">🛡️</div>
+            <p>Run a prediction to check<br>for disease risk conditions</p>
+          </div>
+        </div>
+      <!-- BOTTOM: Risk Flags -->
+      <section class="panel features-panel">
+        <div class="panel-header">
+          <span class="panel-icon">🔬</span>
+          <h2 class="panel-title">Risk Analysis</h2>
+        </div>
+        <div class="features-grid" id="featuresGrid">
+          <div class="feature-item">
+            <span class="feature-label">🔴 Fungal Risk</span>
+            <span class="feature-val" id="feat-fungal_risk">--</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-label">☀️ Drought Risk</span>
+            <span class="feature-val" id="feat-drought_risk">--</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-label">💧 Waterlogging Risk</span>
+            <span class="feature-val" id="feat-waterlog_risk">--</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- History Chart -->
+      <section class="panel chart-panel">
+        <div class="panel-header">
+          <span class="panel-icon">📈</span>
+          <h2 class="panel-title">Sensor Reading History</h2>
+          <span class="panel-sub" id="chartSubtitle">Real ESP8266 Telemetry Records</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="historyChart"></canvas>
+          <div class="chart-empty-state" id="chartEmptyState">📡 Awaiting physical ESP8266 telemetry packets. Hardware data will plot automatically.</div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ── COMPUTER VISION SECTION ───────────────────────────────── -->
+  <main class="main-grid" id="visionSection" style="display: none;">
+
+      <!-- LEFT COLUMN: Foliage Image Input -->
+      <section class="panel sensor-panel" id="visionInputPanel">
+        <div class="panel-header">
+          <span class="panel-icon">🔬</span>
+          <h2 class="panel-title">Foliage Image Input</h2>
+          <span class="panel-badge">38 CLASSES</span>
+        </div>
+
+        <div class="state-status-bar" id="visionStateStatus" style="font-size: 0.76rem; padding: 5px 10px; margin: 0 0 12px 0; border-radius: var(--radius-sm); background: rgba(82, 183, 136, 0.08); border: 1px solid rgba(82, 183, 136, 0.2); color: var(--green-bright); display: flex; align-items: center; gap: 6px;" aria-live="polite">
+          <span class="status-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: var(--green-bright); display: inline-block;"></span>
+          <span>Status: Idle · Awaiting Specimen</span>
+        </div>
+
+        <!-- Dedicated Hidden File Input (isolated outside dropzone to prevent event bubbling recursion) -->
+        <input type="file" id="cvFileInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleCvFileSelect(event)" />
+
+        <!-- Upload Dropzone -->
+        <div class="cv-dropzone" id="cvDropzone" onclick="handleDropzoneContainerClick(event)">
+          <div class="dropzone-content" id="dropzonePrompt" onclick="triggerCvFileInput(event)">
+            <div class="dropzone-icon">📷</div>
+            <div class="dropzone-text">
+              <strong>Click to upload</strong> or drag leaf image here
+            </div>
+            <div class="dropzone-hint">Supports JPEG, PNG, or WebP (up to 15 MB)</div>
+          </div>
+          <div class="dropzone-preview-wrap" id="dropzonePreviewWrap" style="display:none" onclick="event.stopPropagation()">
+            <div class="preview-img-container" onclick="openPreviewInModal(event)">
+              <img id="cvPreviewImg" class="cv-preview-thumb" alt="Uploaded Leaf Preview" title="Click to inspect fullscreen" />
+              <button type="button" class="preview-expand-btn" onclick="openPreviewInModal(event)" title="Fullscreen Preview">⛶</button>
+            </div>
+            <div class="preview-meta-row" onclick="event.stopPropagation()">
+              <span class="preview-filename" id="cvPreviewFilename" title="Current specimen filename">sample.jpg</span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="change-img-btn btn-choose-other" onclick="triggerCvFileInput(event)" aria-label="Choose Another Image to Analyze">📁 Choose Another Image</button>
+                <button type="button" class="change-img-btn btn-reset-specimen" onclick="resetVisionToNewSpecimen(event)" title="Reset workspace and upload new specimen" aria-label="Reset workspace">✕ Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Vision Model Architecture Selector -->
+        <div class="model-selector-box">
+          <div class="model-selector-header">
+            <span class="model-selector-title">🧠 Vision Backbone</span>
+            <span class="model-selector-tag" id="activeModelTag">Server EfficientNetV2-S (256×256)</span>
+          </div>
+          <div class="model-tier-buttons" role="radiogroup" aria-label="Vision Model Backbone Selection">
+            <button type="button" class="model-tier-btn active" id="btnTierServer" onclick="selectModelTier('server')" title="Server-Grade EfficientNetV2-S: 38-class universal pathology classification with verified Test Top-1 95.13% (256×256)">
+              <span class="tier-icon">🧠</span>
+              <div class="tier-text-wrap">
+                <span class="tier-name">Server-Grade</span>
+                <span class="tier-model-sub">EfficientNetV2-S</span>
+              </div>
+            </button>
+            <button type="button" class="model-tier-btn" id="btnTierGen2" onclick="selectModelTier('gen2')" title="Gen-2 Multi-Domain: Tri-Dataset (PlantVillage + PlantDoc + PlantWild) with YOLO26 Detector & Gen-2 UNet">
+              <span class="tier-icon">🚀</span>
+              <div class="tier-text-wrap">
+                <span class="tier-name">Gen-2 Tri-Domain</span>
+                <span class="tier-model-sub">EffNet + YOLO26</span>
+              </div>
+            </button>
+            <button type="button" class="model-tier-btn" id="btnTierEdge" onclick="selectModelTier('edge')" title="Edge MobileNetV2: Ultra-fast studio screening (224×224)">
+              <span class="tier-icon">⚡</span>
+              <div class="tier-text-wrap">
+                <span class="tier-name">Edge Mobile</span>
+                <span class="tier-model-sub">MobileNetV2</span>
+              </div>
+            </button>
+            <button type="button" class="model-tier-btn" id="btnTierEnsemble" onclick="selectModelTier('ensemble')" title="Ensemble Consensus: Weighted dual prediction (60% Server + 40% Edge)">
+              <span class="tier-icon">🔀</span>
+              <div class="tier-text-wrap">
+                <span class="tier-name">Ensemble</span>
+                <span class="tier-model-sub">Dual Consensus</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Foliage Scenarios -->
+        <div class="presets vision-presets">
+          <p class="presets-label">Quick Foliage Scenarios:</p>
+          <div class="preset-buttons vision-preset-grid">
+            <button type="button" class="preset-btn" onclick="loadSampleLeaf('tomato_early_blight')">
+              <span class="preset-emoji">🍅</span>
+              <span class="preset-text">Early Blight</span>
+            </button>
+            <button type="button" class="preset-btn" onclick="loadSampleLeaf('corn_rust')">
+              <span class="preset-emoji">🌽</span>
+              <span class="preset-text">Common Rust</span>
+            </button>
+            <button type="button" class="preset-btn" onclick="loadSampleLeaf('grape_rot')">
+              <span class="preset-emoji">🍇</span>
+              <span class="preset-text">Black Rot</span>
+            </button>
+            <button type="button" class="preset-btn" onclick="loadSampleLeaf('apple_scab')">
+              <span class="preset-emoji">🍎</span>
+              <span class="preset-text">Apple Scab</span>
+            </button>
+            <button type="button" class="preset-btn preset-btn-full" onclick="loadSampleLeaf('healthy')">
+              <span class="preset-emoji">🌱</span>
+              <span class="preset-text">Healthy Leaf</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary CTA: Analyze Plant Health Button -->
+        <button type="button" class="predict-btn vision-cta-btn" id="visionAnalyzeBtn" onclick="runVisionPrediction()">
+          <span class="btn-icon">⚡</span>
+          <span>Analyze Plant Health</span>
+        </button>
+      </section>
+
+      <!-- DRAGGABLE PANEL RESIZER -->
+      <div class="panel-resizer" id="visionResizer" role="separator" aria-orientation="vertical" aria-label="Resize panels" title="Drag to adjust panel widths"></div>
+
+      <!-- RIGHT COLUMN: Pathology Diagnosis & Advisory -->
+      <div class="right-column">
+
+        <!-- Pathology Diagnosis Card (Immediate Primary Focal Point) -->
+        <section class="panel recommendation-panel" id="visionResultPanel">
+          <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="panel-icon">🌿</span>
+              <h2 class="panel-title">Visual Diagnosis</h2>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <!-- Compact Non-Blocking Image Quality Pill -->
+              <div id="visionQualityCompact" class="quality-compact-pill" style="display: none;" onclick="toggleQualityDrawer()" title="Click to inspect image quality telemetry">
+                <span id="qualityPillIcon">🛡️</span>
+                <span id="qualityPillText">Quality: Optimal</span>
+                <span id="qualityPillToggle">▼</span>
+              </div>
+              <span class="panel-badge model-arch-badge" id="visionModelBadge" style="display:none">EfficientNetV2-S</span>
+              <span class="panel-badge" id="visionTriageBadge" style="display:none">STAGE 0</span>
+            </div>
+          </div>
+
+          <!-- Collapsible Quality Details Drawer (Non-blocking, subordinate) -->
+          <div id="visionQualityDrawer" class="quality-drawer" style="display: none;">
+            <div class="quality-drawer-inner" id="visionQualityDrawerContent"></div>
+          </div>
+
+          <!-- Progressive Non-Blocking Inference Pipeline Progress -->
+          <div id="analysisProgressCard" class="analysis-progress-card" style="display: none;" role="status" aria-live="polite">
+            <div class="analysis-progress-header">
+              <div class="analysis-pulse-dot" aria-hidden="true"></div>
+              <span class="analysis-progress-title" id="analysisProgressTitle">Running Neural Inference Cascade...</span>
+              <span class="analysis-progress-status" id="analysisProgressStage">Preparing image</span>
+            </div>
+            <div class="analysis-progress-track">
+              <div class="analysis-progress-bar" id="analysisProgressBar"></div>
+            </div>
+            <div class="analysis-steps-preview">
+              <span class="step-chip active" id="chip-step-preflight">1. Quality Preflight</span>
+              <span class="step-chip" id="chip-step-classify">2. EfficientNetV2-S</span>
+              <span class="step-chip" id="chip-step-detect">3. YOLO PlantDoc</span>
+              <span class="step-chip" id="chip-step-segment">4. Mobile-UNet</span>
+              <span class="step-chip" id="chip-step-explain">5. Grad-CAM</span>
+            </div>
+          </div>
+
+          <div class="recommendation-content" id="visionResultContent">
+            <div class="placeholder-state">
+              <div class="placeholder-icon">🍃</div>
+              <p>Upload a foliage photograph or pick a quick scenario<br>and click <strong>Analyze Plant Health</strong></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Agronomic Advisory Panel -->
+        <section class="panel disease-panel" id="visionAdvisoryPanel">
+          <div class="panel-header">
+            <span class="panel-icon">💊</span>
+            <h2 class="panel-title">Agronomic Advisory & Treatment</h2>
+          </div>
+          <div class="disease-content" id="visionAdvisoryContent">
+            <div class="placeholder-state">
+              <div class="placeholder-icon">📋</div>
+              <p>Actionable agronomic advisory, chemical treatment protocols,<br>and cultural practices will be computed upon leaf analysis</p>
+            </div>
+          </div>
+        </section>
+
+      <!-- BOTTOM: Multi-Tier Visual Analysis & Spatial Telemetry Canvas -->
+      <section class="panel features-panel" id="visionInspectionPanel" style="display:none">
+        <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="panel-icon">🎯</span>
+            <h2 class="panel-title">Visual Analysis & Spatial Telemetry</h2>
+            <span class="panel-sub">YOLO PlantDoc Localization & Mobile-UNet Foliar Mask</span>
+          </div>
+          <div class="canvas-header-actions">
+            <!-- Visualization Mode Switcher Tabs -->
+            <div class="vis-mode-tabs" role="tablist" aria-label="Visual Analysis Modes">
+              <button type="button" class="vis-tab-btn active" id="btnVisSpecimen" onclick="setVisualizationMode('specimen')" title="Original specimen photograph">🍃 Specimen</button>
+              <button type="button" class="vis-tab-btn" id="btnVisDetection" onclick="setVisualizationMode('detection')" title="YOLO PlantDoc object detection bounding boxes">🎯 Detection</button>
+              <button type="button" class="vis-tab-btn" id="btnVisSegmentation" onclick="setVisualizationMode('segmentation')" title="Mobile-UNet sub-pixel foliar lesion segmentation">🌿 Segmentation</button>
+              <button type="button" class="vis-tab-btn" id="btnVisGradCam" onclick="setVisualizationMode('gradcam')" title="EfficientNetV2-S Grad-CAM saliency activation heatmap">🔬 Grad-CAM</button>
+            </div>
+            <button type="button" class="fullscreen-inspect-btn" onclick="openCanvasFullscreen()" title="Fullscreen Inspection">
+              ⛶ Fullscreen
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode-specific contextual sub-controls -->
+        <div class="vis-subcontrols-bar" id="visSubcontrolsBar">
+          <div id="detectionSubcontrols" class="vis-subcontrol-group" style="display: none; flex-wrap: wrap; gap: 10px; align-items: center;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <label class="switch-small">
+                <input type="checkbox" id="toggleSpecimenCheckbox" checked onchange="toggleSpecimenBoxes(this.checked)" />
+                <span class="slider-toggle"></span>
+              </label>
+              <span class="toggle-label-small">🌿 Specimen Boundary (<span id="specimenCountDisplay">0</span>)</span>
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <label class="switch-small">
+                <input type="checkbox" id="toggleLesionsCheckbox" checked onchange="toggleLesionBoxes(this.checked)" />
+                <span class="slider-toggle"></span>
+              </label>
+              <span class="toggle-label-small">🎯 Pathology Lesions (<span id="lesionCountDisplay">0</span>)</span>
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <label class="switch-small">
+                <input type="checkbox" id="toggleBoxLabelsCheckbox" checked onchange="toggleBoxLabels(this.checked)" />
+                <span class="slider-toggle"></span>
+              </label>
+              <span class="toggle-label-small">Labels &amp; Conf</span>
+            </div>
+            <div class="detection-legend-inline" style="display: inline-flex; align-items: center; gap: 12px; margin-left: auto; font-size: 0.72rem; color: var(--text-secondary);">
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: rgba(82, 183, 136, 0.25); display: inline-block; border: 1.5px solid #52b788;"></span> 🌿 Specimen Boundary (<span id="legendSpecimenCount">0</span>)</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: rgba(244, 162, 97, 0.25); display: inline-block; border: 1.5px solid #f4a261;"></span> 🎯 Pathology Foci (<span id="legendLesionCount">0</span>)</span>
+            </div>
+            <div id="detectionDiagRibbon" style="width: 100%; font-size: 0.68rem; color: var(--text-muted); background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px 10px; display: flex; gap: 16px; font-family: monospace;">
+              <span>🌿 Specimen: raw=<span id="diagRawSpecimen">0</span> ➔ nms=<span id="diagNmsSpecimen">0</span> ➔ rendered=<span id="diagRenderedSpecimen">0</span></span>
+              <span>🎯 Lesions: raw=<span id="diagRawLesion">0</span> ➔ nms=<span id="diagNmsLesion">0</span> ➔ rendered=<span id="diagRenderedLesion">0</span></span>
+            </div>
+          </div>
+          <div id="segmentationSubcontrols" class="vis-subcontrol-group" style="display: none;">
+            <button type="button" class="subcontrol-pill-btn active" id="btnSegOverlay" onclick="setSegmentationDisplay('overlay')">Translucent Overlay</button>
+            <button type="button" class="subcontrol-pill-btn" id="btnSegRaw" onclick="setSegmentationDisplay('raw')">Discrete Class Mask</button>
+          </div>
+          <div id="gradcamSubcontrols" class="vis-subcontrol-group" style="display: none;">
+            <button type="button" class="subcontrol-pill-btn active" id="btnCamOverlay" onclick="setGradCamDisplay('overlay')">Saliency Overlay</button>
+            <button type="button" class="subcontrol-pill-btn" id="btnCamHeatmap" onclick="setGradCamDisplay('heatmap')">Jet Heatmap</button>
+          </div>
+        </div>
+
+        <div class="canvas-container">
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="visionInspectionCanvas"></canvas>
+            <div id="canvasEmptyPlaceholder" style="display: none; color: var(--text-secondary); font-size: 0.85rem; text-align: center; padding: 20px;">
+              <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🍃</span>
+              Visualization unavailable for this specimen.
+            </div>
+          </div>
+          <div class="telemetry-stats">
+            <div class="feature-item">
+              <span class="feature-label tooltip-wrap" tabindex="0" aria-label="Foliar Damage Index: Percentage of leaf tissue identified as necrotic or diseased by Mobile-UNet.">
+                📊 Foliar Damage Index ℹ️
+                <span class="tooltip-box" role="tooltip">Pixel-level percentage of diseased leaf tissue computed from Mobile-UNet semantic segmentation.</span>
+              </span>
+              <span class="feature-val" id="telemetryDamageVal">--%</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-label tooltip-wrap" tabindex="0" aria-label="Targeted Lesion Foci: Number of verified disease lesion bounding boxes detected by YOLO PlantDoc.">
+                🎯 Targeted Lesion Foci ℹ️
+                <span class="tooltip-box" role="tooltip">Count of discrete foliar lesion regions localized by YOLO PlantDoc above detection threshold.</span>
+              </span>
+              <span class="feature-val" id="telemetryFociVal">--</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-label">🧠 Primary Backbone</span>
+              <span class="feature-val" id="telemetryModelVal">--</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-label tooltip-wrap" tabindex="0" aria-label="Multi-Tier Latency: Actual measured server inference computation time.">
+                ⚡ Multi-Tier Latency ℹ️
+                <span class="tooltip-box" role="tooltip">Actual server execution time measured dynamically across classification, detection, and segmentation models.</span>
+              </span>
+              <span class="feature-val" id="telemetryLatencyVal">-- ms</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-label">💻 Compute Hardware</span>
+              <span class="feature-val flag-off" id="telemetryDeviceVal">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode Legend & Explanation Bar -->
+        <div class="vis-mode-legend" id="visModeLegend">
+          <span class="legend-icon" id="legendIcon">ℹ️</span>
+          <span id="legendText">Select a visualization mode above to inspect authentic model representations.</span>
+        </div>
+      </section>
+
+      <!-- Technical Details & Model Telemetry (Always Open & Showing) -->
+      <section class="panel technical-panel" id="visionTechPanel">
+        <div class="panel-header" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="panel-icon">⚙️</span>
+            <h2 class="panel-title">Model Architecture & Verification Telemetry</h2>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="panel-badge" id="techProvenanceBadge" style="background: rgba(82, 183, 136, 0.15); color: var(--green-bright); border: 1px solid rgba(82, 183, 136, 0.35);">AUTHENTIC CHECKPOINTS</span>
+          </div>
+        </div>
+        <div class="technical-content" id="visionTechContent" style="display: block; padding: 14px 18px;">
+          <!-- Dynamically populated by renderTechnicalDetails() -->
+        </div>
+      </section>
+
+      <!-- ── INFERENCE PIPELINE EXPLAINABILITY (9-Stage Step-by-Step Breakdown) ── -->
+      <section class="panel explainability-panel" id="visionExplainabilityPanel" style="display:none">
+        <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="panel-icon">🔬</span>
+            <h2 class="panel-title">Inference Pipeline & Preprocessing Explainability</h2>
+            <span class="panel-sub">Step-by-step neural transformation & multi-modal fusion</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div class="explain-mode-toggle" role="group" aria-label="Explanation Complexity Toggle">
+              <button type="button" class="explain-mode-btn active" id="btnExplainSimple" onclick="setExplainMode('simple')" title="Plain language explanation for field practitioners">🌱 Simple (Farmer)</button>
+              <button type="button" class="explain-mode-btn" id="btnExplainTechnical" onclick="setExplainMode('technical')" title="Deep architectural and mathematical details for AI engineers">🔬 Technical (AI)</button>
+            </div>
+            <span class="panel-badge panel-badge-manual">9 STAGES AUDITED</span>
+            <button type="button" class="preset-btn" onclick="toggleExplainGrid()" style="padding: 4px 8px; font-size: 0.75rem;" title="Collapse or Expand Gallery">
+              <span id="explainToggleIcon">▲</span>
+            </button>
+          </div>
+        </div>
+        <div class="explainability-summary-bar" id="explainabilitySummaryBar">
+          <span class="explain-summary-item">🖼️ Input: <strong id="explainInputRes">--</strong></span>
+          <span class="explain-summary-item">📐 Normalized: <strong id="explainNormDim">--</strong></span>
+          <span class="explain-summary-item">🧠 Activation Entropy: <strong id="explainEntropy">--</strong></span>
+          <span class="explain-summary-item">🎯 Final Decision: <strong id="explainConsensus">--</strong></span>
+        </div>
+        <div class="explainability-grid" id="explainabilityGrid">
+          <!-- 9 Stages dynamically populated from backend explainability pipeline -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ── IMAGE FULLSCREEN MODAL ──────────────────────────────── -->
+  <div class="image-modal-backdrop" id="imageModal" onclick="closeImageModal()" style="display:none">
+    <div class="image-modal-dialog" onclick="event.stopPropagation()">
+      <div class="image-modal-header">
+        <span class="image-modal-title" id="imageModalTitle">High-Resolution Visual Inspection</span>
+        <button type="button" class="image-modal-close" onclick="closeImageModal()" title="Close Viewer (Esc)">✕</button>
+      </div>
+      <div class="image-modal-body">
+        <img id="imageModalImg" src="" alt="Fullscreen Inspection" style="display:none" />
+        <canvas id="imageModalCanvas" style="display:none"></canvas>
+      </div>
+      <div class="image-modal-footer">
+        <span id="imageModalCaption">3-Tier Cascade Computer Vision Diagnostics</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p id="loadingOverlayText">Running ML Pipeline...</p>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="./app.js?v=20260911_foci"></script>
+</body>
+</html>

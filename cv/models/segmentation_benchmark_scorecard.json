@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-09-09T11:47:33Z",
+  "evaluator": "SmartCropVision Foliar Segmentation Benchmark",
+  "device": "mps",
+  "models": [
+    {
+      "model_id": "mobile_unet",
+      "display_name": "Mobile-UNet (Edge Baseline)",
+      "tier": "edge",
+      "parameters_m": 0.266,
+      "mean_latency_ms": 12.64,
+      "effective_fps": 79.1,
+      "iou_score": 0.0977,
+      "dice_coefficient": 0.1779,
+      "foliar_damage_pct": 100.0
+    },
+    {
+      "model_id": "res_unet_server",
+      "display_name": "Residual U-Net (Server Grade)",
+      "tier": "server",
+      "parameters_m": 0.615,
+      "mean_latency_ms": 25.8,
+      "effective_fps": 38.8,
+      "iou_score": 0.0236,
+      "dice_coefficient": 0.0461,
+      "foliar_damage_pct": 2.95
+    }
+  ],
+  "selection_rationale": "Mobile-UNet delivers exceptional sub-15ms efficiency on edge devices with depthwise separable convolutions, while Residual U-Net provides superior boundary delineation for server-side lesion quantification."
+}

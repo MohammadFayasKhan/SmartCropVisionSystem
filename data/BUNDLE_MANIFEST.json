@@ -1,0 +1,80 @@
+{
+  "bundle_id": "SmartCropVision-Bundle-v2.2-CompleteRelease",
+  "release_version": "2.2.0",
+  "format_version": "1.0",
+  "description": "Self-contained SmartCropVision dataset, model, and training release bundle.",
+  "runtime_extraction_target": "SmartCropVision_runtime",
+  "minimum_ephemeral_disk_gb": 12.0,
+  "bundled_datasets": {
+    "plantvillage": {
+      "dataset_name": "PlantVillage Laboratory Foliar Pathology",
+      "relative_path": "cv/datasets/raw/plantvillage/raw/color",
+      "status": "BUNDLED",
+      "task": "classification",
+      "sample_count": 54305,
+      "class_count": 38,
+      "annotation_type": "class_directory",
+      "license": "CC0 1.0 Universal / Public Domain (Hughes & Salathe 2015)",
+      "redistributable": true,
+      "role": "Controlled laboratory baseline for 38 canonical crop-disease classes"
+    },
+    "plantdoc": {
+      "dataset_name": "PlantDoc In-Field Pathology & Object Detection",
+      "relative_path": "cv/datasets/raw/plantdoc_od_repo",
+      "status": "BUNDLED",
+      "task": "detection_and_classification",
+      "sample_count": 2592,
+      "annotation_count": 2581,
+      "annotation_type": "pascal_voc_xml",
+      "license": "MIT License (Singh et al. 2019, IIT Delhi)",
+      "redistributable": true,
+      "role": "Real-world in-field disease identification and bounding box localization"
+    },
+    "plantwild": {
+      "dataset_name": "PlantWild In-The-Wild Natural Foliage",
+      "relative_path": "cv/datasets/raw/plantwild",
+      "status": "BUNDLED",
+      "task": "field_classification",
+      "sample_count": 18542,
+      "class_count": 89,
+      "annotation_type": "class_directory",
+      "license": "Open Research Dataset",
+      "redistributable": true,
+      "role": "Complex background, natural canopy, and varied illumination robustness"
+    },
+    "segmentation": {
+      "dataset_name": "Foliar Lesion Pixel-Level Semantic Segmentation",
+      "relative_path": "cv/datasets/processed/segmentation",
+      "status": "BUNDLED",
+      "task": "foliar_segmentation",
+      "sample_count": 260,
+      "mask_count": 260,
+      "annotation_type": "paired_binary_mask",
+      "license": "Project Curated Open Research",
+      "redistributable": true,
+      "role": "Sub-pixel lesion surface area quantification and foliar damage percentage"
+    }
+  },
+  "selective_extraction_profiles": {
+    "FULL_DATASET": [
+      "plantvillage",
+      "plantdoc",
+      "plantwild",
+      "segmentation"
+    ],
+    "CLASSIFICATION_ONLY": [
+      "plantvillage",
+      "plantwild"
+    ],
+    "DETECTION_ONLY": [
+      "plantdoc"
+    ],
+    "SEGMENTATION_ONLY": [
+      "segmentation"
+    ],
+    "BENCHMARK": [
+      "plantvillage",
+      "segmentation"
+    ]
+  }
+}

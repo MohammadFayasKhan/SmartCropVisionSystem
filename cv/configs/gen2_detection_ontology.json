@@ -1,0 +1,438 @@
+{
+  "ontology_name": "SmartCropVision Gen-2 Agricultural Spatial Detection Ontology",
+  "version": "v2.0-plantdoc-spatial-canonical",
+  "total_detection_classes": 29,
+  "total_verified_bounding_boxes": 8889,
+  "total_annotated_images": 2581,
+  "classifier_taxonomy_version": "38-class-canonical",
+  "unsupported_classifier_classes_explanation": "Classification classes without spatial annotations (such as Orange Haunglongbing and certain foliage varieties in PlantVillage) are not forced into fake detection boxes. The detector only fires on genuine agricultural categories with spatial training data.",
+  "detection_classes": [
+    {
+      "detection_class_id": 0,
+      "detection_class_name": "Apple Scab Leaf",
+      "annotation_count": 171,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "apple",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Apple___Apple_scab"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 1,
+      "detection_class_name": "Apple leaf",
+      "annotation_count": 247,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "apple",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Apple___Apple_scab",
+        "Apple___Black_rot",
+        "Apple___Cedar_apple_rust",
+        "Apple___healthy"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 2,
+      "detection_class_name": "Apple rust leaf",
+      "annotation_count": 178,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "apple",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Apple___Cedar_apple_rust"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 3,
+      "detection_class_name": "Bell_pepper leaf",
+      "annotation_count": 323,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "pepper",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Pepper,_bell___healthy",
+        "Pepper,_bell___Bacterial_spot"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 4,
+      "detection_class_name": "Bell_pepper leaf spot",
+      "annotation_count": 264,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "pepper",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Pepper,_bell___Bacterial_spot"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 5,
+      "detection_class_name": "Blueberry leaf",
+      "annotation_count": 839,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "blueberry",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Blueberry___healthy"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 6,
+      "detection_class_name": "Cherry leaf",
+      "annotation_count": 240,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "cherry",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Cherry_(including_sour)___healthy",
+        "Cherry_(including_sour)___Powdery_mildew"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 7,
+      "detection_class_name": "Corn Gray leaf spot",
+      "annotation_count": 78,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "corn",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 8,
+      "detection_class_name": "Corn leaf blight",
+      "annotation_count": 369,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "corn",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Corn_(maize)___Northern_Leaf_Blight"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 9,
+      "detection_class_name": "Corn rust leaf",
+      "annotation_count": 127,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "corn",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Corn_(maize)___Common_rust_"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 10,
+      "detection_class_name": "Peach leaf",
+      "annotation_count": 614,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "peach",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Peach___healthy",
+        "Peach___Bacterial_spot"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 11,
+      "detection_class_name": "Potato leaf",
+      "annotation_count": 11,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "potato",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Potato___healthy",
+        "Potato___Early_blight",
+        "Potato___Late_blight"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 12,
+      "detection_class_name": "Potato leaf early blight",
+      "annotation_count": 331,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "potato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Potato___Early_blight"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 13,
+      "detection_class_name": "Potato leaf late blight",
+      "annotation_count": 249,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "potato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Potato___Late_blight"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 14,
+      "detection_class_name": "Raspberry leaf",
+      "annotation_count": 556,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "raspberry",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Raspberry___healthy"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 15,
+      "detection_class_name": "Soyabean leaf",
+      "annotation_count": 266,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "soybean",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Soybean___healthy"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 16,
+      "detection_class_name": "Squash Powdery mildew leaf",
+      "annotation_count": 257,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "squash",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Squash___Powdery_mildew"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 17,
+      "detection_class_name": "Strawberry leaf",
+      "annotation_count": 492,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "strawberry",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Strawberry___healthy",
+        "Strawberry___Leaf_scorch"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 18,
+      "detection_class_name": "Tomato Early blight leaf",
+      "annotation_count": 213,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Early_blight"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 19,
+      "detection_class_name": "Tomato Septoria leaf spot",
+      "annotation_count": 436,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Septoria_leaf_spot"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 20,
+      "detection_class_name": "Tomato leaf",
+      "annotation_count": 396,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___healthy",
+        "Tomato___Bacterial_spot",
+        "Tomato___Early_blight",
+        "Tomato___Late_blight",
+        "Tomato___Leaf_Mold",
+        "Tomato___Septoria_leaf_spot",
+        "Tomato___Spider_mites Two-spotted_spider_mite",
+        "Tomato___Target_Spot",
+        "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+        "Tomato___Tomato_mosaic_virus"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 21,
+      "detection_class_name": "Tomato leaf bacterial spot",
+      "annotation_count": 280,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Bacterial_spot"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 22,
+      "detection_class_name": "Tomato leaf late blight",
+      "annotation_count": 220,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Late_blight"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 23,
+      "detection_class_name": "Tomato leaf mosaic virus",
+      "annotation_count": 255,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Tomato_mosaic_virus"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 24,
+      "detection_class_name": "Tomato leaf yellow virus",
+      "annotation_count": 829,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Tomato_Yellow_Leaf_Curl_Virus"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 25,
+      "detection_class_name": "Tomato mold leaf",
+      "annotation_count": 293,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Leaf_Mold"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 26,
+      "detection_class_name": "Tomato two spotted spider mites leaf",
+      "annotation_count": 2,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "tomato",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Tomato___Spider_mites Two-spotted_spider_mite"
+      ],
+      "has_direct_classifier_match": true
+    },
+    {
+      "detection_class_id": 27,
+      "detection_class_name": "grape leaf",
+      "annotation_count": 220,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "grape",
+      "category_type": "organ_leaf",
+      "health_state": "unspecified_leaf",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Grape___healthy",
+        "Grape___Black_rot",
+        "Grape___Esca_(Black_Measles)",
+        "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)"
+      ],
+      "has_direct_classifier_match": false
+    },
+    {
+      "detection_class_id": 28,
+      "detection_class_name": "grape leaf black rot",
+      "annotation_count": 133,
+      "annotation_type": "genuine_pascal_voc_bndbox",
+      "target_crop": "grape",
+      "category_type": "foliar_disease",
+      "health_state": "diseased",
+      "source_dataset": "PlantDoc-VOC-v1.0",
+      "related_classifier_classes": [
+        "Grape___Black_rot"
+      ],
+      "has_direct_classifier_match": true
+    }
+  ]
+}

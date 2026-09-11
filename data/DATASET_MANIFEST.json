@@ -1,0 +1,89 @@
+{
+  "manifest_version": "2.2.0",
+  "total_bundled_images": 75699,
+  "total_bundled_annotations": 2841,
+  "datasets": {
+    "plantvillage": {
+      "total_images": 54305,
+      "classes": {
+        "Apple___Apple_scab": 630,
+        "Apple___Black_rot": 621,
+        "Apple___Cedar_apple_rust": 275,
+        "Apple___healthy": 1645,
+        "Blueberry___healthy": 1502,
+        "Cherry_(including_sour)___Powdery_mildew": 1052,
+        "Cherry_(including_sour)___healthy": 854,
+        "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": 513,
+        "Corn_(maize)___Common_rust_": 1192,
+        "Corn_(maize)___Northern_Leaf_Blight": 985,
+        "Corn_(maize)___healthy": 1162,
+        "Grape___Black_rot": 1180,
+        "Grape___Esca_(Black_Measles)": 1383,
+        "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": 1076,
+        "Grape___healthy": 423,
+        "Orange___Haunglongbing_(Citrus_greening)": 5507,
+        "Peach___Bacterial_spot": 2297,
+        "Peach___healthy": 360,
+        "Pepper,_bell___Bacterial_spot": 997,
+        "Pepper,_bell___healthy": 1478,
+        "Potato___Early_blight": 1000,
+        "Potato___Late_blight": 1000,
+        "Potato___healthy": 152,
+        "Raspberry___healthy": 371,
+        "Soybean___healthy": 5090,
+        "Squash___Powdery_mildew": 1835,
+        "Strawberry___Leaf_scorch": 1109,
+        "Strawberry___healthy": 456,
+        "Tomato___Bacterial_spot": 2127,
+        "Tomato___Early_blight": 1000,
+        "Tomato___Late_blight": 1909,
+        "Tomato___Leaf_Mold": 952,
+        "Tomato___Septoria_leaf_spot": 1771,
+        "Tomato___Spider_mites Two-spotted_spider_mite": 1676,
+        "Tomato___Target_Spot": 1404,
+        "Tomato___Tomato_Yellow_Leaf_Curl_Virus": 5357,
+        "Tomato___Tomato_mosaic_virus": 373,
+        "Tomato___healthy": 1591
+      }
+    },
+    "plantdoc": {
+      "total_images": 2592,
+      "total_xml_annotations": 2581,
+      "format": "Pascal VOC XML",
+      "classes_represented": 17
+    },
+    "plantwild": {
+      "total_images": 18542,
+      "categories": [
+        "apple black rot",
+        "apple leaf",
+        "apple mosaic virus",
+        "apple rust",
+        "apple scab",
+        "banana leaf",
+        "banana panama disease",
+        "basil downy mildew",
+        "basil leaf",
+        "bean halo blight",
+        "bean leaf",
+        "bean mosaic virus",
+        "bean rust",
+        "bell pepper leaf",
+        "bell pepper leaf spot",
+        "blueberry leaf",
+        "blueberry rust",
+        "broccoli downy mildew",
+        "broccoli leaf",
+        "cabbage alternaria leaf spot"
+      ]
+    },
+    "segmentation": {
+      "image_count": 260,
+      "mask_count": 260,
+      "splits": {
+        "train": 200,
+        "val": 60
+      }
+    }
+  }
+}

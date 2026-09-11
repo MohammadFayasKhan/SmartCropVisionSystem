@@ -1,0 +1,33 @@
+{
+  "release_id": "SmartCropVision-Gen2-MultiDomain-Production",
+  "version": "2.2.0",
+  "timestamp": "2026-09-11T04:17:19.709703Z",
+  "hardware_validated": "Tesla T4",
+  "models": {
+    "classifier": {
+      "architecture": "EfficientNetV2-S",
+      "file": "efficientnetv2_s_tri_domain_best.pt",
+      "sha256": "7ebe13a085819231878c776092c112b2c0babf678d39e4d0f2a2e1ee258f25c7",
+      "classes": 38,
+      "accuracy": 0.9542,
+      "macro_f1": 0.9388,
+      "ece": 0.0765
+    },
+    "detector": {
+      "architecture": "YOLO26-PlantDoc",
+      "file": "yolo26_tri_domain_best.pt",
+      "sha256": "e98545716c774d796a4796f620138022f6388a063bf8a9d36dfc5937372366b6",
+      "classes": 29,
+      "map50": 0.3584,
+      "map50_95": 0.2512
+    },
+    "segmenter": {
+      "architecture": "Mobile-UNet",
+      "file": "mobile_unet_best.pt",
+      "sha256": "86bba6df9222b92c2d8b019fb2a10eacc2654f1a61b6e2b5996d8c8ee3cc04cc",
+      "classes": 3,
+      "mean_iou": 0.7485,
+      "lesion_dice": 0.7012
+    }
+  }
+}

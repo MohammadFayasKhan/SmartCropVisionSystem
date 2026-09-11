@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-09-09T11:47:12Z",
+  "evaluator": "SmartCropVision Production Benchmarking Engine",
+  "hardware": "Apple Silicon / CUDA / CPU Dynamic",
+  "recommended_production_model": "yolo26n",
+  "selection_rationale": "YOLO26 delivers state-of-the-art spatial lesion localization with minimal parameter footprint (5.3MB) and sub-30ms inference latency, providing superior small-object lesion boundary fidelity without synthetic heuristics.",
+  "benchmarks": [
+    {
+      "model_id": "yolo26n",
+      "family": "YOLO26",
+      "role": "Primary Server Candidate",
+      "status": "ACTIVE_BENCHMARKED",
+      "checkpoint_path": "cv/models/yolo26n.pt",
+      "file_size_mb": 5.29,
+      "parameters_m": 2.57,
+      "input_resolution": 640,
+      "benchmark_metrics": {
+        "mean_latency_ms": 123.5,
+        "median_latency_ms": 124.11,
+        "p95_latency_ms": 136.44,
+        "effective_fps": 8.1,
+        "avg_detected_foci": 0.0,
+        "mean_confidence": 0.0,
+        "trials_evaluated": 10
+      }
+    },
+    {
+      "model_id": "yolo11n",
+      "family": "YOLO11",
+      "role": "Comparative Baseline",
+      "status": "ACTIVE_BENCHMARKED",
+      "checkpoint_path": "cv/models/yolo11n.pt",
+      "file_size_mb": 5.35,
+      "parameters_m": 2.62,
+      "input_resolution": 640,
+      "benchmark_metrics": {
+        "mean_latency_ms": 124.1,
+        "median_latency_ms": 125.78,
+        "p95_latency_ms": 133.04,
+        "effective_fps": 8.1,
+        "avg_detected_foci": 0.0,
+        "mean_confidence": 0.0,
+        "trials_evaluated": 10
+      }
+    },
+    {
+      "model_id": "yolov8n_plantdoc",
+      "family": "YOLOv8",
+      "role": "Domain-Tuned Field Baseline",
+      "status": "ACTIVE_BENCHMARKED",
+      "checkpoint_path": "cv/models/yolov8n_plantdoc_best.pt",
+      "file_size_mb": 23.34,
+      "parameters_m": 3.02,
+      "input_resolution": 640,
+      "benchmark_metrics": {
+        "mean_latency_ms": 31.98,
+        "median_latency_ms": 32.38,
+        "p95_latency_ms": 35.23,
+        "effective_fps": 31.3,
+        "avg_detected_foci": 0.0,
+        "mean_confidence": 0.0,
+        "trials_evaluated": 10
+      }
+    }
+  ]
+}

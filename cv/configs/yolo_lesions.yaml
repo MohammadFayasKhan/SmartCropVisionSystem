@@ -1,0 +1,7 @@
+# Smart Crop Vision System → Tier 2 YOLOv8 Lesion Detection Config
+path: cv/datasets/processed/yolo_lesions
+train: images/train
+val: images/val
+
+names:
+  0: early_blight_lesion

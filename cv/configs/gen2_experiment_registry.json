@@ -1,0 +1,67 @@
+{
+  "experiment_name": "SmartCropVision Gen-2 Multi-Domain YOLO26 & Segmentation Expansion",
+  "experiment_id": "exp_gen2_multidomain_2026",
+  "timestamp": "2026-09-11T08:30:00Z",
+  "status": "active_research_pipeline",
+  "production_baseline": {
+    "classifier": {
+      "checkpoint": "efficientnetv2_s_best.pt",
+      "rel_path": "cv/models/efficientnetv2_s_best.pt",
+      "sha256": "07e84d39481f0757898c5088cc7fb9e9d28817fbd71e16769fea5eb056eace74",
+      "size_mb": 78.03,
+      "status": "verified_production_baseline",
+      "architecture": "EfficientNetV2-S",
+      "verified_metrics": {
+        "test_top1_acc": 0.9513,
+        "test_macro_f1": 0.9354,
+        "ece": 0.0803
+      }
+    },
+    "detector": {
+      "checkpoint": "yolo_plantdoc_best.pt",
+      "rel_path": "cv/models/yolo_plantdoc_best.pt",
+      "sha256": "e98545716c774d796a4796f620138022f6388a063bf8a9d36dfc5937372366b6",
+      "size_mb": 5.19,
+      "status": "verified_production_baseline",
+      "architecture": "YOLO-PlantDoc (fine-tuned)",
+      "verified_metrics": {
+        "val_map50": 0.3362,
+        "val_map50_95": 0.2361
+      }
+    },
+    "segmenter": {
+      "checkpoint": "mobile_unet_best.pt",
+      "rel_path": "cv/models/mobile_unet_best.pt",
+      "sha256": "86bba6df9222b92c2d8b019fb2a10eacc2654f1a61b6e2b5996d8c8ee3cc04cc",
+      "size_mb": 1.9,
+      "status": "verified_production_baseline",
+      "architecture": "Mobile-UNet",
+      "verified_metrics": {
+        "genuine_masks_count": 260
+      }
+    }
+  },
+  "candidate_namespace": {
+    "working_directory": "gen2_experiments/",
+    "release_directory": "SmartCropVision_release_gen2/",
+    "classifier_candidates": [
+      "ConvNeXt-Tiny",
+      "EfficientNetV2-S-Gen2"
+    ],
+    "detector_candidates": [
+      "YOLO26n-PlantDoc-Spatial"
+    ],
+    "segmenter_candidates": [
+      "EfficientNet-UNet-Foliar"
+    ]
+  },
+  "promotion_gates": [
+    "Gate 1: Dataset Audit & Annotation Integrity Pass (Zero synthetic boxes/masks)",
+    "Gate 2: Smoke Run Pipeline Verification (1 mini-batch end-to-end forward/backward)",
+    "Gate 3: Resumable Checkpointing & Deterministic Evaluation",
+    "Gate 4: Held-Out & Cross-Domain Validation (Candidate must exceed baseline mAP/F1)",
+    "Gate 5: Standalone Direct Checkpoint Inference & Cryptographic Checksum Match",
+    "Gate 6: Multi-Tier Inference Parity & Backend Dynamic Synchronization",
+    "Gate 7: Formal Promotion Decision Sign-Off"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "ontology_name": "SmartCropVision Gen-2 Foliar Pathology Sub-Pixel Segmentation Ontology",
+  "version": "v2.0-foliar-subpixel-canonical",
+  "input_resolution": [
+    256,
+    256
+  ],
+  "num_classes": 3,
+  "classes": [
+    {
+      "class_id": 0,
+      "class_name": "background",
+      "description": "Non-foliar ambient background (soil, workbench, mulch, air, or non-plant structures)",
+      "color_rgb": [
+        0,
+        0,
+        0
+      ],
+      "color_hex": "#000000"
+    },
+    {
+      "class_id": 1,
+      "class_name": "healthy_leaf",
+      "description": "Healthy photosynthetic foliar canopy tissue with intact chloroplast structures",
+      "color_rgb": [
+        46,
+        204,
+        113
+      ],
+      "color_hex": "#2ecc71"
+    },
+    {
+      "class_id": 2,
+      "class_name": "necrotic_lesion",
+      "description": "Pathological chlorotic/necrotic foliar tissue displaying fungal, bacterial, or viral symptoms",
+      "color_rgb": [
+        231,
+        76,
+        60
+      ],
+      "color_hex": "#e74c3c"
+    }
+  ],
+  "metric_definitions": {
+    "foliar_damage_percentage": "Foliar Damage % = (Lesion Pixels / max(1, Leaf Pixels)) * 100.0",
+    "severity_thresholds": {
+      "healthy": "Foliar Damage % == 0.0 or non-infected classification consensus",
+      "mild": "0.0 < Foliar Damage % <= 10.0",
+      "moderate": "10.0 < Foliar Damage % <= 25.0",
+      "severe": "Foliar Damage % > 25.0"
+    },
+    "evaluation_metrics": [
+      "Dice_Coefficient",
+      "Intersection_over_Union_IoU",
+      "Pixel_Accuracy",
+      "Lesion_Specific_IoU"
+    ]
+  },
+  "dataset_provenance": {
+    "genuine_paired_masks_count": 260,
+    "train_split": 200,
+    "val_split": 60,
+    "zero_pseudo_masks_policy": "Pseudo-masks and morphological approximations are strictly prohibited from supervised evaluation"
+  }
+}

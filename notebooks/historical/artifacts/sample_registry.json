@@ -1,0 +1,32 @@
+{
+  "tomato_early_blight": {
+    "image_path": "cv/datasets/raw/plantdoc_repo/train/Tomato Early blight leaf/early-blight-in-high-tunnel-tomatoes-19tm74h.jpg",
+    "class_name": "Tomato___Early_blight",
+    "common_name": "Tomato - Early blight",
+    "crop": "Tomato"
+  },
+  "corn_rust": {
+    "image_path": "cv/datasets/raw/plantdoc_repo/train/Corn rust leaf/imag4090.jpg",
+    "class_name": "Corn_(maize)___Common_rust_",
+    "common_name": "Corn (maize) - Common rust",
+    "crop": "Corn (maize)"
+  },
+  "grape_rot": {
+    "image_path": "cv/datasets/raw/plantdoc_repo/train/grape leaf black rot/Black_Rot_of_Grapes1155.jpg",
+    "class_name": "Grape___Black_rot",
+    "common_name": "Grape - Black rot",
+    "crop": "Grape"
+  },
+  "apple_scab": {
+    "image_path": "cv/datasets/raw/plantdoc_repo/train/Apple Scab Leaf/scab-venturia-inaequalis-development-of-disease-on-the-stem-upper-B359MJ.jpg",
+    "class_name": "Apple___Apple_scab",
+    "common_name": "Apple - Apple scab",
+    "crop": "Apple"
+  },
+  "healthy": {
+    "image_path": "cv/datasets/raw/plantdoc_repo/train/Apple leaf/apple-tree-leaf-curl-apple-tree-leaf-curl-aphids-apple-tree-leaves-curling-too-much-water.jpg",
+    "class_name": "Apple___healthy",
+    "common_name": "Apple (Healthy Leaf)",
+    "crop": "Apple"
+  }
+}

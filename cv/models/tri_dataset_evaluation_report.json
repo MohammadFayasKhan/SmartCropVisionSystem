@@ -1,0 +1,21 @@
+{
+  "model_architecture": "EfficientNet-B2",
+  "resolution": "288x288",
+  "loss_function": "Class-Weighted Focal Loss (gamma=2.0, epsilon=0.05)",
+  "training_distribution": "Tri-Dataset (PlantVillage + PlantDoc + PlantWild)",
+  "overall_metrics": {
+    "top1_accuracy": 66.83,
+    "top3_accuracy": 87.82,
+    "balanced_accuracy": 67.88,
+    "macro_f1": 64.12,
+    "inference_speed_fps": 23.8
+  },
+  "domain_breakdown": {
+    "lab_accuracy": 75.5,
+    "lab_macro_f1": 67.42,
+    "field_accuracy": 51.34,
+    "field_macro_f1": 42.74,
+    "generalization_gap": 24.16,
+    "gap_reduction_pct": 52.4
+  }
+}

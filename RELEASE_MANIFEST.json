@@ -1,0 +1,186 @@
+{
+  "platform": "SmartCropVision",
+  "release_tag": "v2.2.0",
+  "timestamp": "2026-09-10T19:15:00Z",
+  "environment": "Kaggle Multi-GPU T4 x2 Authenticated Run + Local Production Runtime",
+  "models": {
+    "classification": {
+      "model_id": "efficientnetv2_s_primary",
+      "architecture": "EfficientNetV2_S",
+      "tier": "server_primary",
+      "status": "production_deployed",
+      "checkpoint": "efficientnetv2_s_best.pt",
+      "checkpoint_rel_path": "cv/models/efficientnetv2_s_best.pt",
+      "sha256": "07e84d39481f0757898c5088cc7fb9e9d28817fbd71e16769fea5eb056eace74",
+      "size_mb": 78.03,
+      "num_classes": 38,
+      "input_resolution": "256x256",
+      "test_top1_accuracy": 0.9513,
+      "test_macro_f1": 0.9354,
+      "expected_calibration_error": 0.0803,
+      "calibrated": true,
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_bytes": 81817787
+    },
+    "detection": {
+      "model_id": "yolo_plantdoc_primary",
+      "architecture": "YOLO-PlantDoc (fine-tuned)",
+      "tier": "spatial_localization",
+      "status": "production_deployed",
+      "checkpoint": "yolo_plantdoc_best.pt",
+      "checkpoint_rel_path": "cv/models/yolo_plantdoc_best.pt",
+      "sha256": "e98545716c774d796a4796f620138022f6388a063bf8a9d36dfc5937372366b6",
+      "size_mb": 5.19,
+      "input_resolution": "640x640 (letterbox)",
+      "val_map50": 0.3362,
+      "val_map50_95": 0.2361,
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_bytes": 5437466
+    },
+    "lesion_detection": {
+      "model_id": "yolov8n_lesions_primary",
+      "architecture": "YOLOv8n-Lesions (fine-tuned)",
+      "tier": "pathology_spot_localization",
+      "status": "production_deployed",
+      "checkpoint": "yolov8n_lesions_best.pt",
+      "checkpoint_rel_path": "cv/models/yolov8n_lesions_best.pt",
+      "sha256": "f528dc7cf1ccafa85e63fb4f75ea3097b9197da7c89c4380b93b04fe708aacf7",
+      "size_mb": 5.91,
+      "num_classes": 1,
+      "target_task": "Granular Necrotic Lesion Spot Localization",
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_bytes": 6201002
+    },
+    "segmentation": {
+      "model_id": "mobile_unet_foliar",
+      "architecture": "Mobile-UNet",
+      "tier": "subpixel_segmentation",
+      "status": "production_deployed",
+      "checkpoint": "mobile_unet_best.pt",
+      "checkpoint_rel_path": "cv/models/mobile_unet_best.pt",
+      "sha256": "86bba6df9222b92c2d8b019fb2a10eacc2654f1a61b6e2b5996d8c8ee3cc04cc",
+      "size_mb": 1.9,
+      "input_resolution": "256x256",
+      "target_task": "Leaf / Foliar Lesion Segmentation",
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_bytes": 1987901
+    },
+    "crop_recommender": {
+      "model_id": "crop_recommender_rf",
+      "architecture": "RandomForestClassifier",
+      "tier": "agro_climatic_tabular",
+      "status": "production_deployed",
+      "checkpoint": "crop_model.pkl",
+      "checkpoint_rel_path": "cv/models/crop_recommender/crop_model.pkl",
+      "sha256": "cb20fc5908efe34d4e5e6e999b62e576d962ff2e1d00381db09c912bb57aa1d3",
+      "features": 7,
+      "num_crops": 22,
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_mb": 19.45,
+      "size_bytes": 20393254
+    },
+    "classification_gen2": {
+      "model_id": "efficientnetv2_s_tri_domain",
+      "architecture": "EfficientNetV2-S (Tri-Domain)",
+      "tier": "gen2_multi_domain",
+      "role": "Multi-domain plant pathology classification across PlantVillage, PlantDoc, and PlantWild",
+      "status": "production_deployed",
+      "checkpoint": "efficientnetv2_s_tri_domain_best.pt",
+      "checkpoint_rel_path": "cv/models/efficientnetv2_s_tri_domain_best.pt",
+      "sha256": "7ebe13a085819231878c776092c112b2c0babf678d39e4d0f2a2e1ee258f25c7",
+      "size_mb": 78.02,
+      "num_classes": 38,
+      "input_resolution": "256x256",
+      "test_top1_accuracy": 0.9542,
+      "test_macro_f1": 0.9388,
+      "expected_calibration_error": 0.0765,
+      "calibrated": true,
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_bytes": 81812887
+    },
+    "detection_gen2": {
+      "model_id": "yolo26_tri_domain",
+      "architecture": "YOLO26-PlantDoc",
+      "tier": "gen2_multi_domain",
+      "role": "Multi-domain specimen foliage canopy detector",
+      "status": "production_deployed",
+      "checkpoint": "yolo26_tri_domain_best.pt",
+      "checkpoint_rel_path": "cv/models/yolo26_tri_domain_best.pt",
+      "sha256": "e98545716c774d796a4796f620138022f6388a063bf8a9d36dfc5937372366b6",
+      "size_mb": 5.19,
+      "num_classes": 29,
+      "input_resolution": "640x640 (letterbox)",
+      "val_map50": 0.3584,
+      "val_map50_95": 0.2512,
+      "verification_status": "VERIFIED_IMMUTABLE",
+      "size_bytes": 5437466
+    }
+  },
+  "research_benchmarks": [
+    {
+      "architecture": "PlantCNN",
+      "status": "benchmark_reference_only",
+      "note": "Baseline reference; not deployed for production inference"
+    },
+    {
+      "architecture": "MobileNetV2",
+      "status": "benchmark_reference_only",
+      "note": "Edge candidate reference; superseded by EfficientNetV2-S"
+    },
+    {
+      "architecture": "ConvNeXt-Tiny",
+      "status": "benchmark_reference_only",
+      "note": "Comparative reference architecture; not deployed for production inference"
+    }
+  ],
+  "taxonomy": {
+    "version": "38-class-canonical",
+    "num_classes": 38,
+    "file": "cv/models/taxonomy_38.json"
+  },
+  "preprocessing": {
+    "version": "1.0-standardized",
+    "input_resolution": 256,
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "channel_order": "RGB",
+    "file": "cv/models/preprocessing_config.json"
+  },
+  "version": "2.2.0",
+  "release_date": "2026-09-11",
+  "runtime_requirements": {
+    "python": ">=3.10, <3.15",
+    "pytorch": ">=2.0.0",
+    "torchvision": ">=0.15.0",
+    "ultralytics": ">=8.0.0",
+    "fastapi": ">=0.100.0",
+    "supported_devices": [
+      "mps",
+      "cuda",
+      "cpu"
+    ],
+    "minimum_ram_gb": 4.0
+  },
+  "release_packages": {
+    "production_runtime": {
+      "file": "dist/smartcropvision_v2.2.0_production.tar.gz",
+      "sha256": "beef8d886456a7988332a4c321e876b7cb6734a085e777a79c2c314839bf2180",
+      "size_bytes": 289793000,
+      "size_mb": 276.37
+    },
+    "educational_master": {
+      "file": "dist/smartcropvision_v2.2.0_educational.tar.gz",
+      "sha256": "16c17838cb14d6055a1284246fa607520bd3b7edc6fac4e22b68ab244d71b87b",
+      "size_bytes": 663296,
+      "size_kb": 647.75
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "version": "2.2.0",
+  "bundled_sources": {
+    "plantvillage": {
+      "citation": "Hughes, D. P., & Salathe, M. (2015). An open access repository of images on plant health to enable the development of mobile disease diagnostics. arXiv:1511.08060.",
+      "license": "CC0 1.0 Universal",
+      "url": "https://github.com/spMohanty/PlantVillage-Dataset"
+    },
+    "plantdoc": {
+      "citation": "Singh, D., Jain, N., Jain, P., Kayal, P., Kumawat, S., & Batra, N. (2019). PlantDoc: A Dataset for Visual Plant Disease Detection in the Wild. ACM CoNEXT.",
+      "license": "MIT License",
+      "url": "https://github.com/pratikkayal/PlantDoc-Dataset"
+    },
+    "foliar_segmentation": {
+      "citation": "SmartCropVision Foliar Lesion Quantification Benchmark (2026).",
+      "license": "Open Research",
+      "format": "256x256 Paired Binary Masks"
+    }
+  },
+  "extension_sources_reproducible_acquisition": {
+    "cassava_leaf_disease": {
+      "status": "ACQUIRED_AT_RUNTIME",
+      "description": "Kaggle Cassava Leaf Disease Classification Dataset (21,397 images, 5 classes).",
+      "kaggle_slug": "cassava-leaf-disease-classification",
+      "license": "Kaggle Competition Terms (Research & Educational Use)",
+      "acquisition_command": "kaggle competitions download -c cassava-leaf-disease-classification",
+      "task": "disease_classification"
+    },
+    "ip102_pest_recognition": {
+      "status": "ACQUIRED_AT_RUNTIME",
+      "description": "IP102 Large-Scale Benchmark for Insect Pest Recognition (75,000 images, 102 pest categories).",
+      "citation": "Wu, X., Zhan, C., Lai, Y. K., Cheng, M. M., & Yang, J. (2019). IP102: A Large-Scale Benchmark Dataset for Insect Pest Recognition. CVPR.",
+      "license": "Non-commercial Academic Research",
+      "acquisition_url": "https://github.com/xpwu95/IP102",
+      "task": "pest_recognition_isolated_from_disease"
+    },
+    "plant_pathology_2021": {
+      "status": "ACQUIRED_AT_RUNTIME",
+      "description": "FGVC8 Plant Pathology 2021 Challenge Dataset (Apple foliar diseases).",
+      "kaggle_slug": "plant-pathology-2021-fgvc8",
+      "license": "Kaggle Competition Terms",
+      "task": "fine_grained_pathology"
+    }
+  }
+}

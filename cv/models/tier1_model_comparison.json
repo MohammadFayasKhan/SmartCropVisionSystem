@@ -1,0 +1,29 @@
+{
+  "PlantCNN": {
+    "params": 426694,
+    "size_mb": 1.63,
+    "top1_acc": 92.0,
+    "top3_acc": 100.0,
+    "latency_ms": 41.43,
+    "fps": 24.1,
+    "samples": 200
+  },
+  "MobileNetV2": {
+    "params": 2272550,
+    "size_mb": 8.67,
+    "top1_acc": 100.0,
+    "top3_acc": 100.0,
+    "latency_ms": 91.77,
+    "fps": 10.9,
+    "samples": 200
+  },
+  "EfficientNet-B2": {
+    "params": 7754536,
+    "size_mb": 29.58,
+    "top1_acc": 92.5,
+    "top3_acc": 100.0,
+    "latency_ms": 228.03,
+    "fps": 4.4,
+    "samples": 200
+  }
+}

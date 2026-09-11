@@ -1,0 +1,74 @@
+{
+  "status": "success",
+  "pipeline_version": "CV-06-Universal-MultiCrop-v2.0",
+  "sample_id": "Corn_Northern_Leaf_Blight_Field_Sample_042.jpg",
+  "crop": "Corn (Zea mays)",
+  "diagnosis": {
+    "predicted_class": "Corn___Northern_Leaf_Blight",
+    "disease_common_name": "Northern Leaf Blight (Exserohilum turcicum)",
+    "confidence_pct": 99.74,
+    "top3_predictions": [
+      {
+        "class": "Corn___Northern_Leaf_Blight",
+        "confidence_pct": 99.74
+      },
+      {
+        "class": "Corn___Common_rust",
+        "confidence_pct": 0.21
+      },
+      {
+        "class": "Corn___Cercospora_leaf_spot_Gray_leaf_spot",
+        "confidence_pct": 0.04
+      }
+    ],
+    "is_infected": true,
+    "triage_stage": "Stage 2 Moderate Lesion Spread",
+    "foliar_damage_pct": 14.82,
+    "lesion_foci_count": 5
+  },
+  "field_spatial_telemetry": {
+    "detection_engine": "YOLOv8-nano PlantDoc In-The-Wild",
+    "bounding_boxes": [
+      {
+        "label": "Corn leaf blight",
+        "bbox_xyxy": [112, 84, 198, 230],
+        "confidence": 0.782,
+        "centroid_norm": [0.387, 0.392]
+      },
+      {
+        "label": "Corn leaf blight",
+        "bbox_xyxy": [245, 140, 310, 290],
+        "confidence": 0.694,
+        "centroid_norm": [0.693, 0.537]
+      },
+      {
+        "label": "Corn leaf blight",
+        "bbox_xyxy": [60, 310, 145, 410],
+        "confidence": 0.618,
+        "centroid_norm": [0.256, 0.900]
+      }
+    ],
+    "nozzle_actuation_targets": 3,
+    "variable_rate_dosage_multiplier": 1.45
+  },
+  "iot_microclimate_fusion": {
+    "telemetry": {
+      "temperature_c": 24.5,
+      "relative_humidity_pct": 88.5,
+      "soil_volumetric_water_content_pct": 68.2,
+      "leaf_wetness_hours": 7.4
+    },
+    "microclimate_disease_pressure_index_mdpi": 0.842,
+    "risk_level": "CRITICAL_SPORE_GERMINATION",
+    "actionable_advisory": "High humidity (88.5% RH) and extended leaf wetness (7.4 hrs at 24.5°C) cross critical Northern Leaf Blight infection thresholds (MDPI: 0.842). Actuate Variable Rate Sprayer (VRA) zone nozzles 2 & 4 with Azoxystrobin (200 mL/ha). Estimated chemical conservation: 68.5% compared to broadcast spray."
+  },
+  "edge_hardware_latency": {
+    "tier1_mobilenetv2_ms": 7.82,
+    "tier2_yolov8n_ms": 11.45,
+    "tier3_mobile_unet_ms": 14.12,
+    "iot_fusion_overhead_ms": 0.35,
+    "total_pipeline_ms": 33.74,
+    "effective_fps": 29.64,
+    "compute_target": "Apple Silicon GPU (MPS) / NVIDIA Jetson Orin Nano Compatible"
+  }
+}

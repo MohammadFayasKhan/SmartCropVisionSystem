@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartcropvision-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      # Read-only mount of model weights registry
+      - ./cv/models:/app/cv/models:ro
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - PORT=8000
+      - HOST=0.0.0.0
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000
+      - MODEL_DIR=/app/cv/models
+      - CONFIG_DIR=/app/cv/configs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

@@ -1,0 +1,73 @@
+{
+  "timestamp": "2026-09-11T08:30:00Z",
+  "datasets": {
+    "PlantVillage": {
+      "modality": "whole_image_classification",
+      "image_count": 54305,
+      "classes_count": 38,
+      "bounding_boxes_count": 0,
+      "segmentation_masks_count": 0,
+      "zero_spatial_annotations_verified": true
+    },
+    "PlantWild": {
+      "modality": "whole_image_classification",
+      "image_count": 18542,
+      "classes_count": 89,
+      "bounding_boxes_count": 0,
+      "segmentation_masks_count": 0,
+      "zero_spatial_annotations_verified": true
+    },
+    "PlantDoc": {
+      "modality": "spatial_bounding_boxes_and_classification",
+      "xml_annotation_count": 2581,
+      "total_bounding_boxes": 8889,
+      "categories_count": 29,
+      "invalid_xml_count": 0,
+      "categories": {
+        "Blueberry leaf": 839,
+        "Tomato leaf yellow virus": 829,
+        "Peach leaf": 614,
+        "Raspberry leaf": 556,
+        "Strawberry leaf": 492,
+        "Tomato Septoria leaf spot": 436,
+        "Tomato leaf": 396,
+        "Corn leaf blight": 369,
+        "Potato leaf early blight": 331,
+        "Bell_pepper leaf": 323,
+        "Tomato mold leaf": 293,
+        "Tomato leaf bacterial spot": 280,
+        "Soyabean leaf": 266,
+        "Bell_pepper leaf spot": 264,
+        "Squash Powdery mildew leaf": 257,
+        "Tomato leaf mosaic virus": 255,
+        "Potato leaf late blight": 249,
+        "Apple leaf": 247,
+        "Cherry leaf": 240,
+        "Tomato leaf late blight": 220,
+        "grape leaf": 220,
+        "Tomato Early blight leaf": 213,
+        "Apple rust leaf": 178,
+        "Apple Scab Leaf": 171,
+        "grape leaf black rot": 133,
+        "Corn rust leaf": 127,
+        "Corn Gray leaf spot": 78,
+        "Potato leaf": 11,
+        "Tomato two spotted spider mites leaf": 2
+      }
+    },
+    "FoliarSegmentation": {
+      "modality": "subpixel_pathology_segmentation",
+      "paired_images": 260,
+      "paired_masks": 260,
+      "verified_classes": [
+        0,
+        1,
+        2
+      ],
+      "zero_pseudo_masks_verified": true
+    }
+  },
+  "modality_separation_verified": true,
+  "warnings": [],
+  "errors": []
+}
