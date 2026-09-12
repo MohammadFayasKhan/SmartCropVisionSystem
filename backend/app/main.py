@@ -430,7 +430,7 @@ async def predict_vision(
 
         return {
             "response_schema_version": resp.response_schema_version,
-            "status": "success",
+            "status": resp.status,
             "request_id": req_id,
             "filename": filename,
             "detection_status": resp.detection_status,
@@ -439,6 +439,7 @@ async def predict_vision(
             "short_explanation": resp.short_explanation,
             "what_to_check": resp.what_to_check,
             "model_metadata": resp.model_metadata.model_dump(),
+            "image_validation": resp.image_validation.model_dump() if resp.image_validation else None,
             "image_quality": resp.image_quality.model_dump() if resp.image_quality else None,
             "uncertainty": resp.uncertainty.model_dump() if resp.uncertainty else None,
             "diagnosis": resp.diagnosis.model_dump(),

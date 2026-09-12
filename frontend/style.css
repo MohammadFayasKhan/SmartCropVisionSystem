@@ -2712,9 +2712,63 @@ input:checked + .slider-toggle::before {
   left        : 50%;
   margin-left : -5px;
   border-width: 5px;
-  border-style: solid;
-  border-color: #0d210d transparent transparent transparent;
+/* ── Pre-Inference Domain Validation Banner ──────────────────────────── */
+.validation-banner {
+  margin-top    : 10px;
+  margin-bottom : 12px;
+  padding       : 12px 14px;
+  border-radius : var(--radius-sm);
+  display       : flex;
+  align-items   : flex-start;
+  gap           : 10px;
+  font-size     : 0.82rem;
+  line-height   : 1.45;
+  box-shadow    : 0 4px 14px rgba(0, 0, 0, 0.25);
+  animation     : fadeIn 0.2s ease-out;
 }
+
+.validation-banner-rejected {
+  background   : rgba(239, 35, 60, 0.12);
+  border       : 1px solid rgba(239, 35, 60, 0.45);
+  color        : #ff8a9a;
+}
+
+.validation-banner-uncertain {
+  background   : rgba(255, 183, 3, 0.12);
+  border       : 1px solid rgba(255, 183, 3, 0.45);
+  color        : #ffd166;
+}
+
+.validation-banner-valid {
+  background   : rgba(82, 183, 136, 0.12);
+  border       : 1px solid rgba(82, 183, 136, 0.4);
+  color        : var(--green-bright);
+}
+
+.validation-banner-icon {
+  font-size    : 1.25rem;
+  line-height  : 1;
+  flex-shrink  : 0;
+  margin-top   : 1px;
+}
+
+.validation-banner-body {
+  flex         : 1;
+}
+
+.validation-banner-title {
+  display      : block;
+  font-weight  : 700;
+  margin-bottom: 3px;
+  font-size    : 0.86rem;
+}
+
+.validation-banner-msg {
+  margin       : 0;
+  color        : var(--text-primary);
+  opacity      : 0.95;
+}
+
 
 
 

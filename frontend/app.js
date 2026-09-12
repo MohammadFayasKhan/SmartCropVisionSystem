@@ -38,6 +38,8 @@ const VisionUIState = {
   IMAGE_SELECTED: "image_selected",
   IMAGE_VALIDATING: "validating",
   VALIDATING: "validating",
+  INVALID_NON_PLANT: "invalid_non_plant",
+  LOW_QUALITY: "low_quality",
   READY_TO_ANALYZE: "ready_to_analyze",
   ANALYZING: "analyzing",
   CLASSIFICATION_COMPLETE: "classification_complete",
@@ -66,7 +68,9 @@ function setVisionUIState(newState, detailText = "") {
   const stateLabels = {
     [VisionUIState.IDLE]: "Status: Idle · Awaiting Specimen",
     [VisionUIState.IMAGE_SELECTED]: "Status: Specimen Loaded · Ready for Analysis",
-    [VisionUIState.VALIDATING]: "Status: Validating Byte Stream & Dimensions...",
+    [VisionUIState.VALIDATING]: "Status: Validating Specimen Domain & Quality...",
+    [VisionUIState.INVALID_NON_PLANT]: "Status: Invalid Specimen · Non-Plant Image Rejected",
+    [VisionUIState.LOW_QUALITY]: "Status: Image Rejected · Sub-Optimal Quality",
     [VisionUIState.READY_TO_ANALYZE]: "Status: Specimen Ready · Awaiting Analysis",
     [VisionUIState.ANALYZING]: "Status: Executing Neural Inference Cascade...",
     [VisionUIState.CLASSIFICATION_COMPLETE]: "Status: Tier 1 Classification Complete",
@@ -81,6 +85,15 @@ function setVisionUIState(newState, detailText = "") {
 
   if (statusEl) {
     statusEl.textContent = detailText ? `${stateLabels[newState] || newState} (${detailText})` : (stateLabels[newState] || newState);
+    if (newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
+      statusEl.style.borderColor = "rgba(239, 35, 60, 0.5)";
+      statusEl.style.background = "rgba(239, 35, 60, 0.1)";
+      statusEl.style.color = "#ff8a9a";
+    } else {
+      statusEl.style.borderColor = "rgba(82, 183, 136, 0.2)";
+      statusEl.style.background = "rgba(82, 183, 136, 0.08)";
+      statusEl.style.color = "var(--green-bright)";
+    }
   }
 
   // Update primary call-to-action button
@@ -89,6 +102,10 @@ function setVisionUIState(newState, detailText = "") {
       analyzeBtn.disabled = true;
       analyzeBtn.classList.add("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span><span>Analyzing Plant Health...</span>';
+    } else if (newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
+      analyzeBtn.disabled = true;
+      analyzeBtn.classList.remove("btn-loading");
+      analyzeBtn.innerHTML = '<span class="btn-icon">🚫</span><span>Specimen Rejected · Upload Plant Leaf</span>';
     } else if (newState === VisionUIState.COMPLETE || newState === VisionUIState.LOW_CONFIDENCE) {
       analyzeBtn.disabled = false;
       analyzeBtn.classList.remove("btn-loading");
@@ -1251,8 +1268,11 @@ function clearPreviousVisionResults() {
   if (explainPanel) explainPanel.style.display = "none";
   if (qualityPanel) qualityPanel.style.display = "none";
   if (qualityCompact) qualityCompact.style.display = "none";
-  if (qualityDrawer) qualityDrawer.style.display = "none";
-  if (progressCard) progressCard.style.display = "none";
+  const banner = document.getElementById("visionValidationBanner");
+  if (banner) {
+    banner.style.display = "none";
+    banner.className = "validation-banner";
+  }
 
   // Keep Model Architecture & Telemetry always visible
   if (techPanel) {
@@ -1415,6 +1435,39 @@ function renderImageQuality(quality) {
   }
 }
 
+function renderValidationBanner(validation) {
+  const banner = document.getElementById("visionValidationBanner");
+  const iconEl = document.getElementById("validationBannerIcon");
+  const titleEl = document.getElementById("validationBannerTitle");
+  const msgEl = document.getElementById("validationBannerMsg");
+
+  if (!banner || !validation) return;
+
+  const status = validation.validation_status || "";
+  const reason = validation.validation_reason || "The uploaded image is not suitable for crop health analysis.";
+
+  if (status === "INVALID_NON_PLANT_IMAGE") {
+    banner.className = "validation-banner validation-banner-rejected";
+    if (iconEl) iconEl.textContent = "🚫";
+    if (titleEl) titleEl.textContent = "Non-Plant Specimen Rejected";
+    if (msgEl) msgEl.textContent = reason;
+    banner.style.display = "flex";
+  } else if (status === "LOW_QUALITY_OR_UNCERTAIN_IMAGE") {
+    banner.className = "validation-banner validation-banner-uncertain";
+    if (iconEl) iconEl.textContent = "⚠️";
+    if (titleEl) titleEl.textContent = "Image Quality / Visibility Insufficient";
+    if (msgEl) msgEl.textContent = reason;
+    banner.style.display = "flex";
+  } else if (status === "VALID_PLANT_IMAGE") {
+    banner.className = "validation-banner validation-banner-valid";
+    if (iconEl) iconEl.textContent = "🌿";
+    if (titleEl) titleEl.textContent = "Valid Crop Specimen Verified";
+    if (msgEl) msgEl.textContent = reason;
+    banner.style.display = "none"; // Clean UX: keep hidden when image passes validation
+  } else {
+    banner.style.display = "none";
+  }
+}
 
 function processSelectedImageFile(file) {
   if (!file.type.startsWith("image/")) {
@@ -1640,6 +1693,51 @@ async function runVisionPrediction(includeExplainability = true) {
       return;
     }
 
+    // Check if pre-inference domain validation rejected the image
+    const validation = data.image_validation;
+    if (validation && (!validation.is_inference_allowed || data.status === "rejected")) {
+      // CLEAR ALL DIAGNOSTIC RESULTS
+      clearPreviousVisionResults();
+      lastVisionResult = null;
+      renderValidationBanner(validation);
+
+      const isNonPlant = validation.validation_status === "INVALID_NON_PLANT_IMAGE";
+      setVisionUIState(
+        isNonPlant ? VisionUIState.INVALID_NON_PLANT : VisionUIState.LOW_QUALITY,
+        validation.validation_reason
+      );
+
+      const resultContent = document.getElementById("visionResultContent");
+      if (resultContent) {
+        resultContent.innerHTML = `
+          <div style="padding: 22px; border: 1px solid ${isNonPlant ? 'rgba(239, 35, 60, 0.45)' : 'rgba(255, 183, 3, 0.45)'}; border-radius: 8px; background: ${isNonPlant ? 'rgba(239, 35, 60, 0.08)' : 'rgba(255, 183, 3, 0.08)'};">
+            <div style="display: flex; align-items: center; gap: 8px; color: ${isNonPlant ? '#ff8a9a' : '#ffd166'}; font-weight: 700; font-size: 0.95rem;">
+              <span>${isNonPlant ? '🚫' : '⚠️'}</span>
+              <span>${isNonPlant ? 'Input Rejected: Non-Plant Specimen' : 'Image Quality / Visibility Insufficient'}</span>
+            </div>
+            <p style="margin-top: 10px; font-size: 0.88rem; line-height: 1.5; color: var(--text-primary);">
+              ${escapeHTML(validation.validation_reason)}
+            </p>
+            <div style="margin-top: 14px; padding: 10px 12px; background: rgba(0, 0, 0, 0.25); border-radius: 6px; font-size: 0.78rem; color: var(--text-secondary);">
+              <strong>Quality Signals:</strong> Blur Variance: ${validation.telemetry?.blur_variance ?? '--'} · Foliar Coverage: ${validation.telemetry?.foliar_presence_ratio != null ? (validation.telemetry.foliar_presence_ratio * 100).toFixed(1) + '%' : '--'} · Plant Presence: ${validation.plant_presence ? 'Yes' : 'No'} · Leaf Detected: ${validation.leaf_presence ? 'Yes' : 'No'}
+            </div>
+            <div style="margin-top: 14px; display: flex; gap: 10px;">
+              <button type="button" class="change-img-btn btn-reset-specimen" onclick="triggerCvFileInput(event)">Upload Genuine Crop Leaf</button>
+            </div>
+          </div>
+        `;
+      }
+
+      showToast(
+        validation.validation_reason || "Uploaded image is not suitable for crop health analysis.",
+        "warning",
+        isNonPlant ? "Specimen Rejected" : "Quality Insufficient"
+      );
+      return;
+    }
+
+    // Valid plant image: hide validation banner and proceed normally
+    renderValidationBanner({ validation_status: "VALID_PLANT_IMAGE", is_inference_allowed: true });
     lastVisionResult = data;
     document.getElementById("visionSection")?.classList.add("has-results");
 

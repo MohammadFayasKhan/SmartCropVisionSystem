@@ -42,6 +42,7 @@ from backend.app.utils.explainability import (
     overlay_cam_on_image,
     numpy_to_base64_jpeg,
 )
+from backend.app.utils.domain_validation import validate_plant_image
 from backend.app.services.model_registry import model_registry
 from backend.app.services.advisory_service import generate_agronomic_advisory
 from backend.app.schemas.diagnosis import (
@@ -54,6 +55,7 @@ from backend.app.schemas.diagnosis import (
     DiagnosisResponse,
     ModelMetadata,
     ImageQualityAssessment,
+    ImageValidationAssessment,
     UncertaintyMetrics,
 )
 
@@ -734,9 +736,118 @@ class InferenceEngine:
         safe_sample_id = generate_safe_sample_id(filename)
         warnings: List[str] = []
 
-        # 0. Validate image server-side
+        # 0. Validate image server-side (decompression-bomb and format safety)
         img_bgr, meta = validate_uploaded_image(file_bytes, filename=filename, content_type=content_type)
         orig_h, orig_w = meta["height"], meta["width"]
+
+        # 0b. Authoritative Pre-Inference Domain Validation & Rejection Pipeline
+        # Defends against arbitrary out-of-domain uploads (people, vehicles, documents, animals, blank frames)
+        # Evaluates botanical vegetation index, spectral chrominance, photometrics, and YOLO PlantDoc cues.
+        detector_candidate = self.model_tier2_plantdoc or self.model_tier2_yolo26
+        val_result = validate_plant_image(img_bgr, detector_model=detector_candidate, filename=filename)
+
+        if not val_result.is_inference_allowed:
+            # HALT: Do not execute disease classification, detection, segmentation, or Grad-CAM.
+            # Return authoritative rejection response with ZERO fabricated diagnostic metrics.
+            rejection_total_ms = (time.time() - total_pipeline_start) * 1000.0
+            model_meta = self.get_model_metadata(tier=model_tier or "server")
+            
+            validation_assessment = ImageValidationAssessment(
+                validation_status=val_result.validation_status,
+                validation_reason=val_result.validation_reason,
+                validation_confidence=val_result.validation_confidence,
+                plant_presence=val_result.plant_presence,
+                leaf_presence=val_result.leaf_presence,
+                image_quality=val_result.image_quality,
+                is_inference_allowed=False,
+                telemetry=val_result.telemetry
+            )
+
+            return DiagnosisResponse(
+                response_schema_version="1.0",
+                status="rejected",
+                pipeline_version="CV-06-Universal-MultiCrop-v2.2",
+                sample_id=safe_sample_id,
+                request_id=request_id,
+                timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                model_metadata=model_meta,
+                image_validation=validation_assessment,
+                image_quality=ImageQualityAssessment(**meta["image_quality"]) if meta.get("image_quality") else None,
+                uncertainty=UncertaintyMetrics(
+                    prediction_margin=0.0,
+                    entropy_nats=0.0,
+                    normalized_uncertainty=1.0,
+                    ood_status="OUT_OF_DISTRIBUTION",
+                    is_low_confidence=True
+                ),
+                diagnosis=DiagnosisSummary(
+                    predicted_class="N/A",
+                    disease_common_name="No Disease Diagnosis (Rejected Image)",
+                    crop="Non-Plant / Unsuitable",
+                    condition_type="invalid_input",
+                    confidence_pct=0.0,
+                    confidence_level="REJECTED",
+                    is_low_confidence=True,
+                    uncertainty_score=1.0,
+                    entropy=0.0,
+                    top3_predictions=[],
+                    is_infected=False,
+                    triage_stage="REJECTED_INPUT",
+                    detection_status="not_requested",
+                    segmentation_status="not_requested",
+                    foliar_damage_pct=None,
+                    lesion_foci_count=0,
+                    lesion_foci_source="none",
+                    model_architecture=model_meta.architecture,
+                    model_tier=model_tier or "server",
+                    short_explanation=val_result.validation_reason,
+                    what_to_check="Please upload a clear, focused photograph of a genuine agricultural crop leaf."
+                ),
+                spatial_telemetry=SpatialTelemetry(
+                    detection_engine="None (Bypassed)",
+                    bounding_boxes=[],
+                    specimen_detections=[],
+                    lesion_detections=[],
+                    nozzle_actuation_targets=0,
+                    variable_rate_dosage_multiplier=1.0,
+                    raw_detection_count=0,
+                    post_filtering_count=0,
+                    canopy_box_count=0,
+                    specimen_box_count=0,
+                    lesion_box_count=0,
+                    localization_capability="none",
+                    localization_notice="Inference bypassed due to image rejection."
+                ),
+                detection_status="not_requested",
+                segmentation_status="not_requested",
+                explainability_status="not_requested",
+                segmentation_mask_b64=None,
+                mask_raw_b64=None,
+                cam_heatmap_b64=None,
+                cam_overlay_b64=None,
+                explainability=None,
+                advisory=AgronomicAdvisory(
+                    immediate_action="Upload a clear photograph of a crop leaf specimen.",
+                    treatment_protocol="None: diagnostic inference bypassed for out-of-domain or unverified image.",
+                    cultural_practices="Ensure the leaf specimen is centered in the frame with good lighting and sharp focus.",
+                    uncertainty_guidance=val_result.validation_reason
+                ),
+                performance_benchmark=LatencyBenchmark(
+                    tier1_mobilenetv2_ms=0.0,
+                    tier1_model_name="None (Validation Rejected)",
+                    tier2_yolov8n_ms=0.0,
+                    tier3_mobile_unet_ms=0.0,
+                    explainability_ms=0.0,
+                    total_pipeline_ms=round(rejection_total_ms, 2),
+                    effective_fps=round(1000.0 / max(1.0, rejection_total_ms), 1),
+                    compute_device=self.device_name
+                ),
+                modalities_used=["image"],
+                multimodal_context=multimodal_context,
+                short_explanation=val_result.validation_reason,
+                what_to_check="Please capture a clean specimen under balanced illumination.",
+                warnings=[f"Image validation rejected input: {val_result.validation_reason}"]
+            )
 
         # Acquire lock to ensure thread/concurrency safe tensor execution
         with self._inference_lock:
@@ -1305,6 +1416,16 @@ class InferenceEngine:
             request_id=request_id,
             timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             model_metadata=model_meta,
+            image_validation=ImageValidationAssessment(
+                validation_status=val_result.validation_status,
+                validation_reason=val_result.validation_reason,
+                validation_confidence=val_result.validation_confidence,
+                plant_presence=val_result.plant_presence,
+                leaf_presence=val_result.leaf_presence,
+                image_quality=val_result.image_quality,
+                is_inference_allowed=True,
+                telemetry=val_result.telemetry
+            ),
             image_quality=ImageQualityAssessment(**quality_info) if quality_info else None,
             uncertainty=UncertaintyMetrics(
                 prediction_margin=round(prediction_margin, 3),

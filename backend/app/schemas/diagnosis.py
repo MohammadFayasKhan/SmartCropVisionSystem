@@ -112,6 +112,16 @@ class LatencyBenchmark(BaseModel):
     effective_fps: float = Field(..., description="Inference frame rate throughput")
     compute_device: str = Field(..., description="Underlying acceleration hardware (MPS / CUDA GPU name / CPU)")
 
+class ImageValidationAssessment(BaseModel):
+    validation_status: str = Field(..., description="VALID_PLANT_IMAGE, INVALID_NON_PLANT_IMAGE, or LOW_QUALITY_OR_UNCERTAIN_IMAGE")
+    validation_reason: str = Field(..., description="User-facing plain-language validation verdict or guidance")
+    validation_confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in domain validation assessment")
+    plant_presence: bool = Field(..., description="True if botanical plant foliage or tissue was detected")
+    leaf_presence: bool = Field(..., description="True if genuine leaf/canopy structure is present")
+    image_quality: str = Field(..., description="Qualitative quality summary")
+    is_inference_allowed: bool = Field(..., description="True only if image passed domain validation and inference proceeded")
+    telemetry: Dict[str, Any] = Field(default_factory=dict, description="Raw computed domain signals")
+
 class ImageQualityAssessment(BaseModel):
     quality_score: float = Field(..., ge=0.0, le=1.0, description="Overall image quality score (0.0 to 1.0)")
     quality_level: str = Field("Good", description="Image quality tier: 'Good', 'Acceptable', or 'Poor'")
@@ -126,6 +136,7 @@ class ImageQualityAssessment(BaseModel):
     warnings: List[str] = Field(default_factory=list, description="Specific warning notices for the user")
     recapture_guidance: Optional[str] = Field(None, description="Actionable photographer guidance if quality is degraded")
     recommendation: Optional[str] = Field(None, description="Actionable photographer guidance alias")
+
 
 class UncertaintyMetrics(BaseModel):
     prediction_margin: float = Field(..., description="Difference between Top-1 and Top-2 class probabilities (0.0 to 1.0)")
@@ -194,6 +205,7 @@ class DiagnosisResponse(BaseModel):
     request_id: Optional[str] = Field(None, description="Unique trace identifier for request auditing")
     timestamp: str = Field(..., description="ISO 8601 evaluation timestamp")
     model_metadata: ModelMetadata = Field(..., description="Model versioning and checkpoint metadata")
+    image_validation: Optional[ImageValidationAssessment] = Field(None, description="Pre-inference domain validation and rejection assessment")
     image_quality: Optional[ImageQualityAssessment] = Field(None, description="Pre-inference image quality evaluation")
     uncertainty: Optional[UncertaintyMetrics] = Field(None, description="Normalized entropy, margin, and OOD assessment")
     diagnosis: DiagnosisSummary = Field(..., description="Complete pathology screening and triage summary")
