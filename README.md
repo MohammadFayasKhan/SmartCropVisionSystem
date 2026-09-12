@@ -1,6 +1,6 @@
 <div align="center">
 
-# SmartCropVision 🌾🔬
+# AI Powered Crop Intelligence Rover 🌿🔬
 
 **An end to end, production grade Agricultural Computer Vision and Agro Climatic Intelligence Platform engineered for automated foliar disease diagnosis, dual layer spatial canopy localization, subpixel damage quantification, and IoT rover telemetry.**
 
