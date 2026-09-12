@@ -1,0 +1,25 @@
+name: Auto Deploy to Azure VM
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Update repository to latest commit
+        run: |
+          cd /home/azureuser/SmartCropVisionSystem
+          git pull origin main
+
+      - name: Update dependencies
+        run: |
+          cd /home/azureuser/SmartCropVisionSystem
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Restart SmartCropVision production service
+        run: |
+          sudo systemctl restart smartcropvision
