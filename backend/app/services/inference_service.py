@@ -12,8 +12,6 @@ Zero fabricated metrics. Zero synthetic bounding boxes. Zero fake overrides.
 
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
-from collections import defaultdict
-import re
 import time
 import json
 import logging
@@ -39,7 +37,6 @@ from backend.app.utils.explainability import (
     build_explainability_pipeline,
     GradCAM,
     get_target_cam_layer,
-    overlay_cam_on_image,
     numpy_to_base64_jpeg,
 )
 from backend.app.utils.domain_validation import validate_plant_image
@@ -83,10 +80,10 @@ class DoubleConv(nn.Module):
 
 class MobileUNet(nn.Module):
     """Lightweight 4-stage U-Net with lateral skip connections for foliar lesion segmentation"""
-    def __init__(self, num_classes: int = 3):
+    def __init__(self, in_ch: int = 3, num_classes: int = 3):
         super().__init__()
         # Encoder
-        self.inc = DoubleConv(3, 16)
+        self.inc = DoubleConv(in_ch, 16)
         self.down1 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(16, 32))
         self.down2 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(32, 64))
         self.down3 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(64, 128))
