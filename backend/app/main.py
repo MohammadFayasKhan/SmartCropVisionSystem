@@ -371,10 +371,14 @@ async def get_latest():
     Returns HTTP 404 if no physical hardware packet has been recorded.
     """
     if latest_iot is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No IoT reading received yet. Waiting for ESP8266 transmission..."
-        )
+        return {
+            "status": "no_data",
+            "temperature": None,
+            "humidity": None,
+            "soil_moisture": None,
+            "rain": None,
+            "message": "No IoT reading received yet. Waiting for ESP8266 transmission..."
+        }
     return latest_iot
 
 
