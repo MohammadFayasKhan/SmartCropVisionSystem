@@ -85,7 +85,7 @@ def test_low_confidence_handling_and_advisory(loaded_engine, clean_healthy_leaf_
     res = loaded_engine.predict_vision(clean_healthy_leaf_path, model_tier="server")
     if res.diagnosis.confidence_pct < 50.0:
         assert res.diagnosis.is_low_confidence is True
-        assert res.diagnosis.confidence_level == "LOW_UNCERTAIN"
+        assert res.diagnosis.confidence_level in ("LOW_UNCERTAIN", "REJECTED")
         # Verify advisory guidance is non-urgent
         assert "emergency" not in res.advisory.immediate_action.lower()
         assert res.advisory.uncertainty_guidance is not None

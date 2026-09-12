@@ -38,6 +38,7 @@ const VisionUIState = {
   IMAGE_SELECTED: "image_selected",
   IMAGE_VALIDATING: "validating",
   VALIDATING: "validating",
+  INVALID_SCREENSHOT: "invalid_screenshot",
   INVALID_NON_PLANT: "invalid_non_plant",
   LOW_QUALITY: "low_quality",
   READY_TO_ANALYZE: "ready_to_analyze",
@@ -69,6 +70,7 @@ function setVisionUIState(newState, detailText = "") {
     [VisionUIState.IDLE]: "Status: Idle · Awaiting Specimen",
     [VisionUIState.IMAGE_SELECTED]: "Status: Specimen Loaded · Ready for Analysis",
     [VisionUIState.VALIDATING]: "Status: Validating Specimen Domain & Quality...",
+    [VisionUIState.INVALID_SCREENSHOT]: "Status: Invalid Specimen · Screenshot or Document Rejected",
     [VisionUIState.INVALID_NON_PLANT]: "Status: Invalid Specimen · Non-Plant Image Rejected",
     [VisionUIState.LOW_QUALITY]: "Status: Image Rejected · Sub-Optimal Quality",
     [VisionUIState.READY_TO_ANALYZE]: "Status: Specimen Ready · Awaiting Analysis",
@@ -85,7 +87,7 @@ function setVisionUIState(newState, detailText = "") {
 
   if (statusEl) {
     statusEl.textContent = detailText ? `${stateLabels[newState] || newState} (${detailText})` : (stateLabels[newState] || newState);
-    if (newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
+    if (newState === VisionUIState.INVALID_SCREENSHOT || newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
       statusEl.style.borderColor = "rgba(239, 35, 60, 0.5)";
       statusEl.style.background = "rgba(239, 35, 60, 0.1)";
       statusEl.style.color = "#ff8a9a";
@@ -102,7 +104,7 @@ function setVisionUIState(newState, detailText = "") {
       analyzeBtn.disabled = true;
       analyzeBtn.classList.add("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span><span>Analyzing Plant Health...</span>';
-    } else if (newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
+    } else if (newState === VisionUIState.INVALID_SCREENSHOT || newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
       analyzeBtn.disabled = true;
       analyzeBtn.classList.remove("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">🚫</span><span>Specimen Rejected · Upload Plant Leaf</span>';
@@ -1446,7 +1448,13 @@ function renderValidationBanner(validation) {
   const status = validation.validation_status || "";
   const reason = validation.validation_reason || "The uploaded image is not suitable for crop health analysis.";
 
-  if (status === "INVALID_NON_PLANT_IMAGE") {
+  if (status === "INVALID_SCREENSHOT_OR_DOCUMENT") {
+    banner.className = "validation-banner validation-banner-rejected";
+    if (iconEl) iconEl.textContent = "🖥️";
+    if (titleEl) titleEl.textContent = "Screenshot or Document Detected";
+    if (msgEl) msgEl.textContent = reason;
+    banner.style.display = "flex";
+  } else if (status === "INVALID_NON_PLANT_IMAGE") {
     banner.className = "validation-banner validation-banner-rejected";
     if (iconEl) iconEl.textContent = "🚫";
     if (titleEl) titleEl.textContent = "Non-Plant Specimen Rejected";
@@ -1578,6 +1586,16 @@ async function runVisionPrediction(includeExplainability = true) {
     return;
   }
 
+  // Prevent analysis if current state is an invalid specimen or rejected screenshot
+  if (
+    currentVisionState === VisionUIState.INVALID_NON_PLANT ||
+    currentVisionState === VisionUIState.INVALID_SCREENSHOT ||
+    currentVisionState === VisionUIState.LOW_QUALITY
+  ) {
+    showToast("Uploaded image does not appear suitable for crop health analysis. Please upload a genuine plant leaf photograph.", "warning", "Specimen Rejected");
+    return;
+  }
+
   // Prevent duplicate concurrent requests
   if (isVisionAnalyzing) {
     return;
@@ -1701,19 +1719,31 @@ async function runVisionPrediction(includeExplainability = true) {
       lastVisionResult = null;
       renderValidationBanner(validation);
 
+      const isScreenshot = validation.validation_status === "INVALID_SCREENSHOT_OR_DOCUMENT";
       const isNonPlant = validation.validation_status === "INVALID_NON_PLANT_IMAGE";
+
+      let nextState = VisionUIState.LOW_QUALITY;
+      if (isScreenshot) {
+        nextState = VisionUIState.INVALID_SCREENSHOT;
+      } else if (isNonPlant) {
+        nextState = VisionUIState.INVALID_NON_PLANT;
+      }
+
       setVisionUIState(
-        isNonPlant ? VisionUIState.INVALID_NON_PLANT : VisionUIState.LOW_QUALITY,
+        nextState,
         validation.validation_reason
       );
 
       const resultContent = document.getElementById("visionResultContent");
       if (resultContent) {
+        const isStrictRejection = isScreenshot || isNonPlant;
+        const headerIcon = isScreenshot ? '🖥️' : (isNonPlant ? '🚫' : '⚠️');
+        const headerTitle = isScreenshot ? 'Input Rejected: Screenshot or Document' : (isNonPlant ? 'Input Rejected: Non-Plant Specimen' : 'Image Quality or Visibility Insufficient');
         resultContent.innerHTML = `
-          <div style="padding: 22px; border: 1px solid ${isNonPlant ? 'rgba(239, 35, 60, 0.45)' : 'rgba(255, 183, 3, 0.45)'}; border-radius: 8px; background: ${isNonPlant ? 'rgba(239, 35, 60, 0.08)' : 'rgba(255, 183, 3, 0.08)'};">
-            <div style="display: flex; align-items: center; gap: 8px; color: ${isNonPlant ? '#ff8a9a' : '#ffd166'}; font-weight: 700; font-size: 0.95rem;">
-              <span>${isNonPlant ? '🚫' : '⚠️'}</span>
-              <span>${isNonPlant ? 'Input Rejected: Non-Plant Specimen' : 'Image Quality / Visibility Insufficient'}</span>
+          <div style="padding: 22px; border: 1px solid ${isStrictRejection ? 'rgba(239, 35, 60, 0.45)' : 'rgba(255, 183, 3, 0.45)'}; border-radius: 8px; background: ${isStrictRejection ? 'rgba(239, 35, 60, 0.08)' : 'rgba(255, 183, 3, 0.08)'};">
+            <div style="display: flex; align-items: center; gap: 8px; color: ${isStrictRejection ? '#ff8a9a' : '#ffd166'}; font-weight: 700; font-size: 0.95rem;">
+              <span>${headerIcon}</span>
+              <span>${headerTitle}</span>
             </div>
             <p style="margin-top: 10px; font-size: 0.88rem; line-height: 1.5; color: var(--text-primary);">
               ${escapeHTML(validation.validation_reason)}
@@ -1731,7 +1761,7 @@ async function runVisionPrediction(includeExplainability = true) {
       showToast(
         validation.validation_reason || "Uploaded image is not suitable for crop health analysis.",
         "warning",
-        isNonPlant ? "Specimen Rejected" : "Quality Insufficient"
+        isScreenshot ? "Screenshot Rejected" : (isNonPlant ? "Specimen Rejected" : "Quality Insufficient")
       );
       return;
     }

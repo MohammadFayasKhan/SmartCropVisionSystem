@@ -132,13 +132,53 @@ def test_human_portrait_rejection():
 
 # ── TEST 4: Document / Screenshot Rejection ──────────────────────────────────
 def test_document_screenshot_rejection():
-    """Confirms text screenshots and document scans are rejected."""
+    """Confirms text screenshots and document scans are rejected as INVALID_SCREENSHOT_OR_DOCUMENT."""
     doc = create_document_proxy()
     res = validate_plant_image(doc, detector_model=inference_engine.model_tier2_plantdoc)
 
-    assert res.validation_status == "INVALID_NON_PLANT_IMAGE"
+    assert res.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
     assert res.is_inference_allowed is False
-    assert "document or digital screenshot" in res.validation_reason.lower()
+    assert "screenshot or document" in res.validation_reason.lower()
+
+
+# ── TEST 4b: Attached SmartCropVision Website Screenshot Rejection ────────────
+def test_exact_smartcropvision_dashboard_screenshot_rejection():
+    """
+    Direct test using the exact user uploaded SmartCropVision website screenshot.
+    Confirms it is classified as INVALID_SCREENSHOT_OR_DOCUMENT with zero inference calls.
+    """
+    screenshot_path = Path("tests/fixtures/smartcropvision_dashboard_screenshot.png")
+    assert screenshot_path.exists(), "Expected user screenshot fixture in tests/fixtures"
+
+    img = cv2.imread(str(screenshot_path))
+    assert img is not None, "Could not load test fixture screenshot"
+
+    res = validate_plant_image(img, detector_model=inference_engine.model_tier2_plantdoc, filename="dashboard.png")
+    assert res.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
+    assert res.is_inference_allowed is False
+    assert "screenshot or document" in res.validation_reason.lower()
+
+    # Verify end to end rejection through the full inference engine
+    with open(screenshot_path, "rb") as f:
+        file_bytes = f.read()
+
+    response = inference_engine.predict_vision(
+        file_bytes,
+        filename="smartcropvision_dashboard.png",
+        include_explainability=True
+    )
+
+    assert response.status == "rejected"
+    assert response.image_validation is not None
+    assert response.image_validation.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
+    assert response.image_validation.is_inference_allowed is False
+    assert response.diagnosis.predicted_class == "N/A"
+    assert response.diagnosis.confidence_pct == 0.0
+    assert response.diagnosis.is_infected is False
+    assert len(response.diagnosis.top3_predictions) == 0
+    assert len(response.spatial_telemetry.bounding_boxes) == 0
+    assert response.segmentation_mask_b64 is None
+    assert response.cam_heatmap_b64 is None
 
 
 # ── TEST 5: Animal Photograph Rejection ──────────────────────────────────────
@@ -157,7 +197,7 @@ def test_building_architecture_rejection():
     bldg = create_building_proxy()
     res = validate_plant_image(bldg, detector_model=inference_engine.model_tier2_plantdoc)
 
-    assert res.validation_status in ("INVALID_NON_PLANT_IMAGE", "LOW_QUALITY_OR_UNCERTAIN_IMAGE")
+    assert res.validation_status in ("INVALID_NON_PLANT_IMAGE", "INVALID_SCREENSHOT_OR_DOCUMENT", "LOW_QUALITY_OR_UNCERTAIN_IMAGE")
     assert res.is_inference_allowed is False
 
 

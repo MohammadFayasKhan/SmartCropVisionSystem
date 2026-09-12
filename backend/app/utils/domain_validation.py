@@ -1,12 +1,12 @@
 """
-Pre-Inference Domain Validation and Agricultural Image Rejection Module.
-Provides genuine domain validation defending against arbitrary out-of-domain uploads
+Pre Inference Domain Validation and Agricultural Image Rejection Module.
+Provides genuine domain validation defending against arbitrary out of domain uploads
 (people, vehicles, buildings, documents, screenshots, animals, blank frames, random noise)
 before expensive neural disease classification is invoked.
 
 Three Mutually Exclusive States:
   1. VALID_PLANT_IMAGE: Verified botanical foliage or canopy suitable for disease diagnosis.
-  2. INVALID_NON_PLANT_IMAGE: Out-of-domain non-agricultural content rejected from diagnosis.
+  2. INVALID_NON_PLANT_IMAGE: Out of domain non agricultural content rejected from diagnosis.
   3. LOW_QUALITY_OR_UNCERTAIN_IMAGE: Image may contain a plant, but blur, illumination, or visibility is insufficient.
 
 Zero synthetic labels. Zero fabricated metrics. Zero retraining required.
@@ -40,11 +40,16 @@ CONFIGURABLE_THRESHOLDS = {
     "noise_blur_variance_ceiling": 18000.0,
     # Minimum connected botanical contour area ratio
     "min_connected_foliar_blob_ratio": 0.02,
+    # Digital screenshot and UI detection thresholds
+    "screenshot_min_rectilinear_lines": 28,
+    "screenshot_min_ui_rectangles": 2,
+    "screenshot_top10_flat_color_ratio": 0.55,
+    "screenshot_white_px_ratio": 0.50,
 }
 
 
 class DomainValidationResult:
-    """Structured result of pre-inference domain validation."""
+    """Structured result of pre inference domain validation."""
     def __init__(
         self,
         validation_status: str,
@@ -141,7 +146,7 @@ def extract_botanical_signals(img_bgr: np.ndarray) -> Dict[str, Any]:
             max_blob_area = max(cv2.contourArea(c) for c in contours)
             max_blob_ratio = float(max_blob_area / total_pixels)
 
-    # 4. Out-of-Domain Non-Botanical Discriminators
+    # 4. Out of Domain Non Botanical Discriminators
     # Human skin chrominance in YCrCb: Cr in [133, 173], Cb in [77, 127]
     ycrcb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2YCrCb)
     cr = ycrcb[:, :, 1]
@@ -165,6 +170,74 @@ def extract_botanical_signals(img_bgr: np.ndarray) -> Dict[str, Any]:
         and (foliar_presence_ratio < 0.20 or hue_std > 42.0)
     )
 
+    # 5. Screenshot, Application UI, Dashboard, and Document Detection
+    # Evaluates rectilinear line density, rectangular UI container contours,
+    # discrete quantized color dominance (flat panels), and browser chrome elements.
+    min_line_len = int(min(w, h) * 0.14)
+    edges = cv2.Canny(gray, 40, 120)
+    lines = cv2.HoughLinesP(
+        edges,
+        1,
+        np.pi / 180,
+        threshold=75,
+        minLineLength=min_line_len,
+        maxLineGap=8
+    )
+
+    long_h_lines = 0
+    long_v_lines = 0
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line.reshape(4)
+            dx = abs(x2 - x1)
+            dy = abs(y2 - y1)
+            if dy <= 3 and dx >= min_line_len:
+                long_h_lines += 1
+            elif dx <= 3 and dy >= min_line_len:
+                long_v_lines += 1
+    total_rectilinear_lines = long_h_lines + long_v_lines
+
+    # Rectangular UI containers (cards, panels, modal dialogs)
+    contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    ui_rectangles = 0
+    for c in contours:
+        area = cv2.contourArea(c)
+        if area > (total_pixels * 0.005):
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.03 * peri, True)
+            if len(approx) == 4:
+                _, _, bw, bh = cv2.boundingRect(approx)
+                if float(area) / max(1, bw * bh) > 0.70:
+                    ui_rectangles += 1
+
+    # Flat color fill ratio in quantized space (identifies digital UI panels)
+    q_thumb = (cv2.resize(img_bgr, (256, 256)) // 4) * 4
+    pixels = q_thumb.reshape(-1, 3)
+    _, counts = np.unique(pixels, axis=0, return_counts=True)
+    top10_flat_ratio = float(np.sum(np.sort(counts)[::-1][:10]) / float(len(pixels)))
+
+    # Browser window control buttons (such as Mac window dots in top bar)
+    traffic_lights_detected = False
+    if h >= 80 and w >= 200:
+        top_left = img_bgr[:60, :150]
+        red_pts = int(np.sum((top_left[:, :, 2] > 180) & (top_left[:, :, 1] < 100) & (top_left[:, :, 0] < 100)))
+        yellow_pts = int(np.sum((top_left[:, :, 2] > 180) & (top_left[:, :, 1] > 160) & (top_left[:, :, 0] < 100)))
+        green_pts = int(np.sum((top_left[:, :, 1] > 160) & (top_left[:, :, 2] < 100) & (top_left[:, :, 0] < 100)))
+        if red_pts >= 8 and (yellow_pts >= 8 or green_pts >= 8):
+            traffic_lights_detected = True
+
+    white_px_ratio = float(np.sum(gray > 230) / total_pixels)
+
+    is_screenshot_or_doc = bool(
+        traffic_lights_detected
+        or (ui_rectangles >= CONFIGURABLE_THRESHOLDS["screenshot_min_ui_rectangles"] and total_rectilinear_lines >= 6)
+        or (top10_flat_ratio >= CONFIGURABLE_THRESHOLDS["screenshot_top10_flat_color_ratio"] and total_rectilinear_lines >= 8)
+        or (white_px_ratio > CONFIGURABLE_THRESHOLDS["screenshot_white_px_ratio"] and total_rectilinear_lines >= 4)
+        or (mean_bright > 195 and white_px_ratio > 0.40)
+        or (total_rectilinear_lines >= CONFIGURABLE_THRESHOLDS["screenshot_min_rectilinear_lines"] and top10_flat_ratio >= 0.45)
+        or is_document_like
+    )
+
     return {
         "blur_variance": round(blur_var, 2),
         "mean_brightness": round(mean_bright, 2),
@@ -175,6 +248,12 @@ def extract_botanical_signals(img_bgr: np.ndarray) -> Dict[str, Any]:
         "skin_chrominance_ratio": round(skin_ratio, 4),
         "is_document_like": is_document_like,
         "is_noise_like": is_noise_like,
+        "is_screenshot_or_document": is_screenshot_or_doc,
+        "total_rectilinear_lines": total_rectilinear_lines,
+        "ui_rectangles": ui_rectangles,
+        "top10_flat_ratio": round(top10_flat_ratio, 3),
+        "white_px_ratio": round(white_px_ratio, 3),
+        "traffic_lights_detected": traffic_lights_detected,
         "image_dimensions": [w, h],
     }
 
@@ -190,9 +269,10 @@ def validate_plant_image(
 
     Returns:
       DomainValidationResult with validation_status in:
-        - VALID_PLANT_IMAGE
-        - INVALID_NON_PLANT_IMAGE
-        - LOW_QUALITY_OR_UNCERTAIN_IMAGE
+        VALID_PLANT_IMAGE
+        INVALID_NON_PLANT_IMAGE
+        INVALID_SCREENSHOT_OR_DOCUMENT
+        LOW_QUALITY_OR_UNCERTAIN_IMAGE
     """
     signals = extract_botanical_signals(img_bgr)
     blur = signals["blur_variance"]
@@ -204,6 +284,7 @@ def validate_plant_image(
     skin_ratio = signals["skin_chrominance_ratio"]
     is_doc = signals["is_document_like"]
     is_noise = signals["is_noise_like"]
+    is_screenshot_or_doc = signals.get("is_screenshot_or_document", False)
 
     # 1. Hardware Object Detection Signal (YOLO PlantDoc genuine positive evidence)
     detector_leaf_boxes = 0
@@ -237,58 +318,10 @@ def validate_plant_image(
     has_detector_confirmation = bool(detector_leaf_boxes >= 1 and detector_top_conf >= 0.10)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # PHASE A: DEFINITIVE REJECTION OF NON-PLANT DOMAINS
+    # PHASE A: DEFINITIVE REJECTION OF NON PLANT DOMAINS
     # ══════════════════════════════════════════════════════════════════════════
 
-    # A1. Document or screenshot upload
-    if is_doc:
-        return DomainValidationResult(
-            validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image appears to be a text document or digital screenshot."
-            ),
-            validation_confidence=0.92,
-            plant_presence=False,
-            leaf_presence=False,
-            image_quality="Document / Non-Agricultural",
-            is_inference_allowed=False,
-            telemetry=signals
-        )
-
-    # A2. Human photograph / portrait / selfie
-    if skin_ratio > CONFIGURABLE_THRESHOLDS["max_skin_chrominance_ratio"] and (foliar_ratio < 0.12 or green_ratio < 0.10):
-        return DomainValidationResult(
-            validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image appears to contain a person or skin surface rather than crop foliage."
-            ),
-            validation_confidence=0.92,
-            plant_presence=False,
-            leaf_presence=False,
-            image_quality="Human Subject / Non Agricultural",
-            is_inference_allowed=False,
-            telemetry=signals
-        )
-
-    # A3. Synthetic random noise or corrupted pattern
-    if is_noise:
-        return DomainValidationResult(
-            validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image exhibits high-frequency noise or visual corruption."
-            ),
-            validation_confidence=0.95,
-            plant_presence=False,
-            leaf_presence=False,
-            image_quality="Corrupted Pattern",
-            is_inference_allowed=False,
-            telemetry=signals
-        )
-
-    # A4. Blank or solid uniform canvas (white, black, or monochrome)
+    # A1. Blank or solid uniform canvas (white, black, or monochrome)
     if (bright > CONFIGURABLE_THRESHOLDS["max_brightness_mean"] and contrast < 12.0) or \
        (bright < 15.0 and contrast < 8.0) or \
        (contrast < 10.0 and foliar_ratio < 0.02):
@@ -306,8 +339,55 @@ def validate_plant_image(
             telemetry=signals
         )
 
-    # A5. General non-plant objects (vehicles, buildings, domestic animals, furniture, tools)
-    # Characterized by near-zero foliar and green ratios AND lack of detector confirmation
+    # A2. Digital Screenshot, Application UI, Dashboard, or Document
+    # Rejects screenshots of websites, applications, browser windows, UI layouts, documents,
+    # charts, and scans, even if a small thumbnail image is embedded inside the interface.
+    if is_screenshot_or_doc:
+        return DomainValidationResult(
+            validation_status="INVALID_SCREENSHOT_OR_DOCUMENT",
+            validation_reason="This appears to be a screenshot or document rather than a plant photograph. Please upload the original plant leaf image.",
+            validation_confidence=0.96,
+            plant_presence=False,
+            leaf_presence=False,
+            image_quality="Digital Screenshot / UI / Document",
+            is_inference_allowed=False,
+            telemetry=signals
+        )
+
+    # A3. Human photograph / portrait / selfie
+    if skin_ratio > CONFIGURABLE_THRESHOLDS["max_skin_chrominance_ratio"] and (foliar_ratio < 0.12 or green_ratio < 0.10):
+        return DomainValidationResult(
+            validation_status="INVALID_NON_PLANT_IMAGE",
+            validation_reason=(
+                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
+                "The uploaded image appears to contain a person or skin surface rather than crop foliage."
+            ),
+            validation_confidence=0.92,
+            plant_presence=False,
+            leaf_presence=False,
+            image_quality="Human Subject / Non Agricultural",
+            is_inference_allowed=False,
+            telemetry=signals
+        )
+
+    # A4. Synthetic random noise or corrupted pattern
+    if is_noise:
+        return DomainValidationResult(
+            validation_status="INVALID_NON_PLANT_IMAGE",
+            validation_reason=(
+                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
+                "The uploaded image exhibits high frequency noise or visual corruption."
+            ),
+            validation_confidence=0.95,
+            plant_presence=False,
+            leaf_presence=False,
+            image_quality="Corrupted Pattern",
+            is_inference_allowed=False,
+            telemetry=signals
+        )
+
+    # A5. General non plant objects (vehicles, buildings, domestic animals, furniture, tools)
+    # Characterized by near zero foliar and green ratios AND lack of detector confirmation
     if foliar_ratio < 0.04 and not has_detector_confirmation:
         return DomainValidationResult(
             validation_status="INVALID_NON_PLANT_IMAGE",
@@ -318,7 +398,7 @@ def validate_plant_image(
             validation_confidence=0.88,
             plant_presence=False,
             leaf_presence=False,
-            image_quality="Non-Botanical Scene",
+            image_quality="Non Botanical Scene",
             is_inference_allowed=False,
             telemetry=signals
         )
@@ -398,7 +478,7 @@ def validate_plant_image(
     # Meets botanical chrominance criteria, adequate sharpness, and balanced illumination.
     # Supported by detector or foliar presence ratio.
 
-    # Calibrate confidence score based on multi-signal alignment
+    # Calibrate confidence score based on multi signal alignment
     conf_factors = [
         min(1.0, foliar_ratio / 0.40),
         min(1.0, blur / 250.0),
@@ -410,7 +490,7 @@ def validate_plant_image(
 
     return DomainValidationResult(
         validation_status="VALID_PLANT_IMAGE",
-        validation_reason="Verified plant leaf specimen suitable for multi-tier agricultural analysis.",
+        validation_reason="Verified plant leaf specimen suitable for multi tier agricultural analysis.",
         validation_confidence=validation_conf,
         plant_presence=True,
         leaf_presence=True,
