@@ -74,7 +74,7 @@ test("Zero detector findings output exactly 0 bounding boxes without synthetic f
   }
 
   const cleanSampleResponse = {
-    spatial_telemetry: { detection_engine: "YOLOv8-nano", bounding_boxes: [] },
+    spatial_telemetry: { detection_engine: "YOLO-PlantDoc", bounding_boxes: [] },
     diagnosis: { lesion_foci_count: 0 }
   };
 

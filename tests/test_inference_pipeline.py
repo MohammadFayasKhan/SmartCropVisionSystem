@@ -26,11 +26,10 @@ def loaded_engine():
 
 
 @pytest.fixture
-def clean_healthy_leaf_path(tmp_path):
-    """Creates a synthetic uniform green image representing a healthy leaf."""
-    img = Image.new("RGB", (300, 300), color=(45, 140, 50))
-    path = tmp_path / "synthetic_clean_leaf.jpg"
-    img.save(path)
+def clean_healthy_leaf_path():
+    """Returns path to an authentic healthy leaf specimen in the repository."""
+    path = Path("frontend/samples/apple__healthy__healthy.jpg")
+    assert path.exists()
     return str(path)
 
 

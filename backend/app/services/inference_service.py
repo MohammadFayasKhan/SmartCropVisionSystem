@@ -183,9 +183,9 @@ def reconcile_cross_tier_evidence(
 ) -> Tuple[np.ndarray, Optional[str]]:
     """
     Stage 9 Decision Synthesis: Correlates whole-image classifier predictions from Tier 1
-    (Server-Grade EfficientNetV2-S) with spatial specimen detections (PlantDoc) and genuine
-    lesion detections (YOLOv8n Lesions). Preserves the mathematical softmax distribution of the
-    authoritative classifier while providing truthful multi-tier agronomic synthesis.
+    (Server-Grade EfficientNetV2-S) with spatial specimen detections from Tier 2 (YOLO PlantDoc).
+    Preserves the mathematical softmax distribution of the authoritative classifier while
+    providing truthful multi-tier agronomic synthesis without invented lesion models.
     """
     final_probs = np.array(t1_probs, dtype=np.float64, copy=True)
     total_boxes = len(specimen_detections) + len(lesion_detections)
@@ -197,26 +197,7 @@ def reconcile_cross_tier_evidence(
     raw_dis = idx_to_meta[raw_top1]["disease_name"]
     top1_pct = float(final_probs[raw_top1]) * 100.0
 
-    if len(lesion_detections) > 0 and len(specimen_detections) > 0:
-        dom_lesion = max(lesion_detections, key=lambda b: getattr(b, "confidence", 0.0))
-        dom_lbl = getattr(dom_lesion, "class_name", "Lesion")
-        dom_conf = getattr(dom_lesion, "confidence", 0.5)
-        synthesis_note = (
-            f"Stage 9 Multi-Tier Synthesis: Tier 1 EfficientNetV2-S classified specimen as {raw_crop} {raw_dis} "
-            f"({top1_pct:.1f}% confidence). Dual spatial detection localized {len(specimen_detections)} foliage canopy "
-            f"boundary region(s) via {detection_engine_name} and {len(lesion_detections)} verified lesion spot foci "
-            f"via YOLOv8n Lesion Spot Detector (primary lesion: {dom_lbl} at {dom_conf*100:.0f}% confidence)."
-        )
-    elif len(lesion_detections) > 0:
-        dom_lesion = max(lesion_detections, key=lambda b: getattr(b, "confidence", 0.0))
-        dom_lbl = getattr(dom_lesion, "class_name", "Lesion")
-        dom_conf = getattr(dom_lesion, "confidence", 0.5)
-        synthesis_note = (
-            f"Stage 9 Multi-Tier Synthesis: Tier 1 EfficientNetV2-S classified specimen as {raw_crop} {raw_dis} "
-            f"({top1_pct:.1f}% confidence). YOLOv8n Lesion Spot Detector localized {len(lesion_detections)} verified "
-            f"lesion spot foci (primary lesion: {dom_lbl} at {dom_conf*100:.0f}% confidence)."
-        )
-    elif len(specimen_detections) > 0:
+    if len(specimen_detections) > 0:
         dom_specimen = max(specimen_detections, key=lambda b: getattr(b, "confidence", 0.0))
         dom_lbl = getattr(dom_specimen, "class_name", "Leaf")
         dom_conf = getattr(dom_specimen, "confidence", 0.5)
@@ -380,28 +361,20 @@ class InferenceEngine:
         self.idx_to_meta: Dict[int, Dict[str, Any]] = {}
         self.canon_to_meta: Dict[str, Dict[str, Any]] = {}
 
-        # Model references
+        # Model references (Authentic verified production models only)
         self.model_tier1_server: Optional[nn.Module] = None
-        self.model_tier1_gen2: Optional[nn.Module] = None
         self.model_tier1_edge: Optional[nn.Module] = None
         self.model_tier1: Optional[nn.Module] = None
         self.model_tier2: Optional[YOLO] = None
         self.model_tier2_plantdoc: Optional[YOLO] = None
-        self.model_tier2_yolo26: Optional[YOLO] = None
-        self.model_tier2_lesions: Optional[YOLO] = None
         self.model_tier3: Optional[nn.Module] = None
-        self.model_tier3_gen2: Optional[nn.Module] = None
 
         # Detailed component readiness tracking
         self.model_status_map: Dict[str, str] = {
             "tier1_server": "uninitialized",
-            "tier1_gen2": "uninitialized",
             "tier1_edge": "uninitialized",
-            "tier2_yolo26": "uninitialized",
             "tier2_plantdoc": "uninitialized",
-            "tier2_lesions": "uninitialized",
             "tier3_unet": "uninitialized",
-            "tier3_gen2": "uninitialized",
         }
         self.is_loaded: bool = False
 
@@ -495,29 +468,11 @@ class InferenceEngine:
             # Authoritative production classifier: EfficientNetV2-S only (no silent fallbacks)
             self.model_tier1 = self.model_tier1_server
 
-            # 3. Load Tier 1 Gen-2 Tri-Domain EfficientNetV2-S (if present)
-            if hasattr(settings, "GEN2_TIER1_MODEL_PATH") and settings.GEN2_TIER1_MODEL_PATH.exists():
-                try:
-                    eff_g2 = models.efficientnet_v2_s(weights=None)
-                    eff_g2.classifier[1] = nn.Linear(1280, 38)
-                    sd_g2 = torch.load(settings.GEN2_TIER1_MODEL_PATH, map_location=self.device)
-                    state_dict_g2 = sd_g2.get("model_state", sd_g2.get("state_dict", sd_g2))
-                    eff_g2.load_state_dict(state_dict_g2)
-                    eff_g2.to(self.device).eval()
-                    self.model_tier1_gen2 = eff_g2
-                    self.model_status_map["tier1_gen2"] = "ready"
-                    logger.info("Tier 1 Gen-2 Tri-Domain EfficientNetV2-S loaded (%.2f MB).",
-                                settings.GEN2_TIER1_MODEL_PATH.stat().st_size / (1024*1024))
-                except Exception as e:
-                    self.model_status_map["tier1_gen2"] = f"error: {str(e)[:40]}"
-                    logger.warning("Notice loading Gen-2 EfficientNetV2-S: %s", e)
-            else:
-                self.model_status_map["tier1_gen2"] = "missing"
-
-            # 4. Load Tier 2 YOLO PlantDoc Object Detector
+            # 2. Load Tier 2 YOLO PlantDoc Specimen Foliage Canopy Detector
             if hasattr(settings, "TIER2_PLANTDOC_MODEL_PATH") and settings.TIER2_PLANTDOC_MODEL_PATH.exists():
                 try:
                     self.model_tier2_plantdoc = YOLO(str(settings.TIER2_PLANTDOC_MODEL_PATH))
+                    self.model_tier2 = self.model_tier2_plantdoc
                     self.model_status_map["tier2_plantdoc"] = "ready"
                     logger.info("Tier 2 YOLO PlantDoc Object Detector loaded (%.2f MB).",
                                 settings.TIER2_PLANTDOC_MODEL_PATH.stat().st_size / (1024*1024))
@@ -527,37 +482,10 @@ class InferenceEngine:
             else:
                 self.model_status_map["tier2_plantdoc"] = "missing"
 
-            # 4b. Load Tier 2 Gen-2 YOLO26 Multi-Domain Detector (if present)
-            if hasattr(settings, "GEN2_TIER2_YOLO26_MODEL_PATH") and settings.GEN2_TIER2_YOLO26_MODEL_PATH.exists():
-                try:
-                    self.model_tier2_yolo26 = YOLO(str(settings.GEN2_TIER2_YOLO26_MODEL_PATH))
-                    self.model_status_map["tier2_yolo26"] = "ready"
-                    logger.info("Tier 2 Gen-2 YOLO26 Multi-Domain Detector loaded (%.2f MB).",
-                                settings.GEN2_TIER2_YOLO26_MODEL_PATH.stat().st_size / (1024*1024))
-                except Exception as e:
-                    self.model_status_map["tier2_yolo26"] = f"error: {str(e)[:40]}"
-                    logger.warning("Notice loading Gen-2 YOLO26: %s", e)
-            else:
-                self.model_status_map["tier2_yolo26"] = "missing"
-
-            # 4c. Load Tier 2 Genuine Lesion Detector (yolov8n_lesions_best.pt)
-            if hasattr(settings, "TIER2_MODEL_PATH") and settings.TIER2_MODEL_PATH.exists():
-                try:
-                    self.model_tier2_lesions = YOLO(str(settings.TIER2_MODEL_PATH))
-                    self.model_tier2 = self.model_tier2_lesions
-                    self.model_status_map["tier2_lesions"] = "ready"
-                    logger.info("Tier 2 Genuine Lesion Spot Detector loaded (%.2f MB).",
-                                settings.TIER2_MODEL_PATH.stat().st_size / (1024*1024))
-                except Exception as e:
-                    self.model_status_map["tier2_lesions"] = f"error: {str(e)[:40]}"
-                    logger.warning("Notice loading Lesion Detector: %s", e)
-            else:
-                self.model_status_map["tier2_lesions"] = "missing"
-
-            # 5. Load Tier 3 Mobile-UNet Foliar Lesion Segmenter
+            # 3. Load Tier 3 Mobile-UNet Foliar Lesion Segmenter
             if settings.TIER3_MODEL_PATH.exists():
                 try:
-                    m3 = MobileUNet(num_classes=3)
+                    m3 = MobileUNet(in_ch=3, num_classes=3)
                     state_dict_t3 = torch.load(settings.TIER3_MODEL_PATH, map_location=self.device)
                     m3.load_state_dict(state_dict_t3.get("model_state", state_dict_t3))
                     m3.to(self.device).eval()
@@ -571,25 +499,7 @@ class InferenceEngine:
             else:
                 self.model_status_map["tier3_unet"] = "missing"
 
-            # 5b. Tier 3 Gen-2 Mobile-UNet Foliar Damage Segmenter (mapped to authoritative Mobile-UNet)
-            if self.model_tier3 is not None:
-                self.model_tier3_gen2 = self.model_tier3
-                self.model_status_map["tier3_gen2"] = "ready"
-                logger.info("Tier 3 Gen-2 Mobile-UNet Foliar Damage Segmenter mapped to authoritative Mobile-UNet.")
-            elif hasattr(settings, "GEN2_TIER3_UNET_MODEL_PATH") and settings.GEN2_TIER3_UNET_MODEL_PATH.exists():
-                try:
-                    m3_g2 = MobileUNet(in_ch=3, num_classes=3)
-                    state_dict_t3_g2 = torch.load(settings.GEN2_TIER3_UNET_MODEL_PATH, map_location=self.device)
-                    m3_g2.load_state_dict(state_dict_t3_g2.get("model_state", state_dict_t3_g2))
-                    m3_g2.to(self.device).eval()
-                    self.model_tier3_gen2 = m3_g2
-                    self.model_status_map["tier3_gen2"] = "ready"
-                except Exception as e:
-                    self.model_status_map["tier3_gen2"] = f"error: {str(e)[:40]}"
-            else:
-                self.model_status_map["tier3_gen2"] = "missing"
-
-            # 6. Real Warmup Inference (Preheats device kernels without retaining activations)
+            # 4. Real Warmup Inference (Preheats device kernels without retaining activations)
             if self.model_tier1_server is not None:
                 try:
                     with torch.inference_mode():
@@ -598,15 +508,6 @@ class InferenceEngine:
                     logger.info("Tier 1 EfficientNetV2-S warmup inference verified.")
                 except Exception as we:
                     logger.warning("Tier 1 warmup notice: %s", we)
-
-            if self.model_tier1_gen2 is not None:
-                try:
-                    with torch.inference_mode():
-                        dummy_t1_g2 = torch.zeros((1, 3, settings.CLASSIFIER_INPUT_RESOLUTION, settings.CLASSIFIER_INPUT_RESOLUTION), device=self.device)
-                        _ = self.model_tier1_gen2(dummy_t1_g2)
-                    logger.info("Tier 1 Gen-2 EfficientNetV2-S warmup inference verified.")
-                except Exception as we:
-                    logger.warning("Tier 1 Gen-2 warmup notice: %s", we)
 
             if self.model_tier3 is not None:
                 try:
@@ -617,38 +518,30 @@ class InferenceEngine:
                 except Exception as we:
                     logger.warning("Tier 3 warmup notice: %s", we)
 
-            if self.model_tier3_gen2 is not None:
-                try:
-                    with torch.inference_mode():
-                        dummy_t3_g2 = torch.zeros((1, 3, 256, 256), device=self.device)
-                        _ = self.model_tier3_gen2(dummy_t3_g2)
-                    logger.info("Tier 3 Gen-2 Mobile-UNet warmup inference verified.")
-                except Exception as we:
-                    logger.warning("Tier 3 Gen-2 warmup notice: %s", we)
-
             self.is_loaded = True
             logger.info("ML vision suite initialization complete. Core ready: %s (Device: %s)", self.is_ready, self.device_name)
 
     def get_model_metadata(self, tier: str = "server") -> ModelMetadata:
         """Returns authoritative ModelMetadata for the specified tier."""
-        tier_lower = tier.lower()
-        if tier_lower in ("gen2", "gen-2", "yolo26", "tri_domain"):
-            return ModelMetadata(
-                model_name="EfficientNetV2-S Tri-Domain Classifier (Gen-2)",
-                model_version="v2.2-gen2-production",
-                architecture="EfficientNetV2-S (Tri-Domain)",
-                taxonomy_version="38-class-canonical",
-                classification_taxonomy_version="TriDomain-38Class-v2.2",
-                detection_taxonomy_version="PlantDoc-29Class-YOLO26-v2.2",
-                segmentation_taxonomy_version="FoliarLesions-3Class-v2.2",
-                input_resolution=f"{settings.CLASSIFIER_INPUT_RESOLUTION}x{settings.CLASSIFIER_INPUT_RESOLUTION}",
-                is_server_authoritative=True,
-                device=self.device_name,
-                test_top1_accuracy=0.9542,
-                macro_f1=0.9388,
-                expected_calibration_error=0.0765,
-                sha256_hash=settings.GEN2_CLASSIFIER_SHA256
-            )
+        is_server = tier != "edge"
+        arch_name = "EfficientNetV2-S Server-Grade Classifier" if is_server else "MobileNetV2 Edge Classifier"
+        input_res = f"{settings.CLASSIFIER_INPUT_RESOLUTION}x{settings.CLASSIFIER_INPUT_RESOLUTION}" if is_server else "224x224"
+        return ModelMetadata(
+            model_name=arch_name,
+            model_version="v2.2-production",
+            architecture="EfficientNetV2-S" if is_server else "MobileNetV2",
+            taxonomy_version="38-class-canonical",
+            classification_taxonomy_version="PlantVillage-38Class-v2.0",
+            detection_taxonomy_version="PlantDoc-29Class-YOLO-v1.0",
+            segmentation_taxonomy_version="FoliarLesions-Binary-v1.0",
+            input_resolution=input_res,
+            is_server_authoritative=is_server,
+            device=self.device_name,
+            test_top1_accuracy=settings.CLASSIFIER_TEST_TOP1_ACC,
+            macro_f1=settings.CLASSIFIER_TEST_MACRO_F1,
+            expected_calibration_error=settings.CLASSIFIER_ECE,
+            sha256_hash=settings.PROMOTED_CLASSIFIER_SHA256
+        )
 
         is_server = tier == "server"
         arch_name = "EfficientNetV2-S Server-Grade Classifier" if is_server else "MobileNetV2 Edge Classifier"
@@ -740,7 +633,7 @@ class InferenceEngine:
         # 0b. Authoritative Pre-Inference Domain Validation & Rejection Pipeline
         # Defends against arbitrary out-of-domain uploads (people, vehicles, documents, animals, blank frames)
         # Evaluates botanical vegetation index, spectral chrominance, photometrics, and YOLO PlantDoc cues.
-        detector_candidate = self.model_tier2_plantdoc or self.model_tier2_yolo26
+        detector_candidate = self.model_tier2_plantdoc
         val_result = validate_plant_image(img_bgr, detector_model=detector_candidate, filename=filename)
 
         if not val_result.is_inference_allowed:
@@ -772,51 +665,9 @@ class InferenceEngine:
                 model_metadata=model_meta,
                 image_validation=validation_assessment,
                 image_quality=ImageQualityAssessment(**meta["image_quality"]) if meta.get("image_quality") else None,
-                uncertainty=UncertaintyMetrics(
-                    prediction_margin=0.0,
-                    entropy_nats=0.0,
-                    normalized_uncertainty=1.0,
-                    ood_status="OUT_OF_DISTRIBUTION",
-                    is_low_confidence=True
-                ),
-                diagnosis=DiagnosisSummary(
-                    predicted_class="N/A",
-                    disease_common_name="No Disease Diagnosis (Rejected Image)",
-                    crop="N/A",
-                    condition_type="invalid_input",
-                    confidence_pct=0.0,
-                    confidence_level="REJECTED",
-                    is_low_confidence=True,
-                    uncertainty_score=1.0,
-                    entropy=0.0,
-                    top3_predictions=[],
-                    is_infected=False,
-                    triage_stage="REJECTED_INPUT",
-                    detection_status="not_requested",
-                    segmentation_status="not_requested",
-                    foliar_damage_pct=None,
-                    lesion_foci_count=0,
-                    lesion_foci_source="none",
-                    model_architecture=model_meta.architecture,
-                    model_tier=model_tier or "server",
-                    short_explanation=val_result.validation_reason,
-                    what_to_check="Please upload a clear, focused photograph of a genuine agricultural crop leaf."
-                ),
-                spatial_telemetry=SpatialTelemetry(
-                    detection_engine="None (Bypassed)",
-                    bounding_boxes=[],
-                    specimen_detections=[],
-                    lesion_detections=[],
-                    nozzle_actuation_targets=0,
-                    variable_rate_dosage_multiplier=1.0,
-                    raw_detection_count=0,
-                    post_filtering_count=0,
-                    canopy_box_count=0,
-                    specimen_box_count=0,
-                    lesion_box_count=0,
-                    localization_capability="none",
-                    localization_notice="Inference bypassed due to image rejection."
-                ),
+                uncertainty=None,
+                diagnosis=None,
+                spatial_telemetry=None,
                 detection_status="not_requested",
                 segmentation_status="not_requested",
                 explainability_status="not_requested",
@@ -825,12 +676,9 @@ class InferenceEngine:
                 cam_heatmap_b64=None,
                 cam_overlay_b64=None,
                 explainability=None,
-                advisory=AgronomicAdvisory(
-                    immediate_action="Upload a clear photograph of a crop leaf specimen.",
-                    treatment_protocol="None: diagnostic inference bypassed for out-of-domain or unverified image.",
-                    cultural_practices="Ensure the leaf specimen is centered in the frame with good lighting and sharp focus.",
-                    uncertainty_guidance=val_result.validation_reason
-                ),
+                advisory=None,
+                short_explanation=val_result.validation_reason,
+                what_to_check="Please upload a genuine, well-illuminated photograph of an agricultural crop leaf.",
                 performance_benchmark=LatencyBenchmark(
                     tier1_mobilenetv2_ms=0.0,
                     tier1_model_name="None (Validation Rejected)",
@@ -843,27 +691,24 @@ class InferenceEngine:
                 ),
                 modalities_used=["image"],
                 multimodal_context=multimodal_context,
-                short_explanation=val_result.validation_reason,
-                what_to_check="Please capture a clean specimen under balanced illumination.",
                 warnings=[f"Image validation rejected input: {val_result.validation_reason}"]
             )
 
         # Acquire lock to ensure thread/concurrency safe tensor execution
         with self._inference_lock:
             # ══════════════════════════════════════════════════════════════════
-            # TIER 1: AUTHORITATIVE CLASSIFICATION (EfficientNetV2-S Server / Gen-2)
+            # TIER 1: AUTHORITATIVE CLASSIFICATION (EfficientNetV2-S Server / MobileNetV2 Edge)
             # ══════════════════════════════════════════════════════════════════
             t1_start = time.time()
             tier_req = (model_tier or "server").lower()
-            if tier_req in ("gen2", "gen-2", "yolo26", "tri_domain"):
-                active_model = self.model_tier1_gen2 if self.model_tier1_gen2 is not None else self.model_tier1_server
-                model_arch_name = "EfficientNetV2-S Tri-Domain Classifier (Gen-2)"
-                active_tier = "gen2"
-                is_server = True
-                active_detector = self.model_tier2_yolo26 if self.model_tier2_yolo26 is not None else self.model_tier2_plantdoc
-                detection_engine_name = "YOLO26-PlantDoc (Gen-2 Specimen Canopy)"
-                # Prioritize verified 1.90MB MobileUNet 3-class foliar segmenter
-                active_segmenter = self.model_tier3 if self.model_tier3 is not None else self.model_tier3_gen2
+            if tier_req in ("edge", "mobilenet_v2"):
+                active_model = self.model_tier1_edge if self.model_tier1_edge is not None else self.model_tier1_server
+                model_arch_name = "MobileNetV2 Edge Classifier"
+                active_tier = "edge"
+                is_server = False
+                active_detector = self.model_tier2_plantdoc
+                detection_engine_name = "YOLO PlantDoc Specimen Canopy"
+                active_segmenter = self.model_tier3
             else:
                 active_model = self.model_tier1_server
                 model_arch_name = "EfficientNetV2-S Server-Grade Classifier"
@@ -889,7 +734,7 @@ class InferenceEngine:
             t1_is_infected = (t1_top1_meta["disease_name"].lower() != "healthy")
 
             # ══════════════════════════════════════════════════════════════════
-            # TIER 2: GENUINE OBJECT DETECTION (YOLO PlantDoc / YOLO26 Detector)
+            # TIER 2: GENUINE OBJECT DETECTION (YOLO PlantDoc Specimen Detector)
             # ══════════════════════════════════════════════════════════════════
             t2_start = time.time()
             specimen_detections: List[BoundingBox] = []
@@ -900,7 +745,7 @@ class InferenceEngine:
             post_nms_lesion_count = 0
             detection_status = "unavailable"
 
-            # 1. Specimen / Foliage Canopy Boundary Localization (PlantDoc / YOLO26)
+            # 1. Specimen / Foliage Canopy Boundary Localization (YOLO PlantDoc)
             if active_detector is not None:
                 try:
                     conf_thresh = settings.YOLO_PLANTDOC_CONF_THRESH
@@ -980,123 +825,32 @@ class InferenceEngine:
             else:
                 warnings.append("Tier 2 specimen detector is not loaded.")
 
-            # 2. Genuine Pathology Lesion Spot Localization (yolov8n_lesions_best.pt)
-            if not t1_is_infected:
-                # Clean Negative Control Gate:
-                # When authoritative classifier diagnoses foliage as healthy, any detector
-                # candidate on soil, background debris, mulch or leaf veins is rejected.
-                lesion_detections = []
-                raw_lesion_count = 0
-                post_nms_lesion_count = 0
-            elif self.model_tier2_lesions is not None:
-                try:
-                    les_conf_thresh = settings.YOLO_LESIONS_CONF_THRESH
-                    try:
-                        les_raw = self.model_tier2_lesions.predict(
-                            img_bgr,
-                            conf=0.01,
-                            iou=settings.YOLO_IOU_THRESH,
-                            verbose=False
-                        )
-                        if len(les_raw) > 0 and les_raw[0].boxes is not None:
-                            raw_lesion_count = len(les_raw[0].boxes)
-                    except Exception:
-                        raw_lesion_count = 0
-
-                    les_res = self.model_tier2_lesions.predict(
-                        img_bgr,
-                        conf=les_conf_thresh,
-                        iou=settings.YOLO_IOU_THRESH,
-                        verbose=False
-                    )
-                    detection_status = "available"
-                    if len(les_res) > 0 and les_res[0].boxes is not None:
-                        l_boxes = les_res[0].boxes
-                        for j in range(len(l_boxes)):
-                            cls_id = int(l_boxes.cls[j].cpu().numpy())
-                            cls_name = les_res[0].names.get(cls_id, f"Lesion_{cls_id}")
-                            conf = float(l_boxes.conf[j].cpu().numpy())
-                            xyxy_raw = l_boxes.xyxy[j].cpu().numpy().astype(float).tolist()
-
-                            x1 = int(round(max(0, min(xyxy_raw[0], orig_w - 1))))
-                            y1 = int(round(max(0, min(xyxy_raw[1], orig_h - 1))))
-                            x2 = int(round(max(x1 + 1, min(xyxy_raw[2], orig_w))))
-                            y2 = int(round(max(y1 + 1, min(xyxy_raw[3], orig_h))))
-
-                            bw = x2 - x1
-                            bh = y2 - y1
-                            b_area = max(1, bw * bh)
-
-                            # Reject degenerate boxes or oversized whole-canopy false positives
-                            if bw < 4 or bh < 4 or b_area > 0.40 * (orig_w * orig_h):
-                                continue
-
-                            # Background Soil & Mulch Spectral Discriminator:
-                            # Reject dark red/brown mulch and soil with negative Excess Green
-                            crop_box = img_bgr[y1:y2, x1:x2]
-                            if crop_box.size > 0:
-                                mb, mg, mr = crop_box.mean(axis=(0, 1))
-                                exg = 2.0 * mg - mr - mb
-                                if exg < -35.0 and mr > (mg + 15.0):
-                                    continue
-
-                            cx = round(float((x1 + x2) / (2.0 * orig_w)), 3)
-                            cy = round(float((y1 + y2) / (2.0 * orig_h)), 3)
-
-                            clean_lbl = cls_name.replace("_", " ").title()
-                            lesion_detections.append(
-                                BoundingBox(
-                                    detection_id=f"lesion_{j}_{cls_id}",
-                                    class_id=cls_id,
-                                    class_name=cls_name,
-                                    category_type="lesion",
-                                    label=f"{clean_lbl} ({conf*100:.0f}%)",
-                                    bbox_xyxy=[x1, y1, x2, y2],
-                                    confidence=round(conf, 2),
-                                    centroid_norm=[cx, cy],
-                                    box_type="lesion",
-                                    color_hex="#f4a261",
-                                    source_model="YOLOv8n Lesion Spot Detector",
-                                    coordinate_space="original_image_pixels"
-                                )
-                            )
-
-                    post_nms_lesion_count = len(lesion_detections)
-                    if raw_lesion_count < post_nms_lesion_count:
-                        raw_lesion_count = post_nms_lesion_count
-                except Exception as le:
-                    logger.warning("Lesion detector execution notice: %s", le)
-                    warnings.append("Lesion detector encountered an issue during execution.")
+            # Tier 2 YOLO PlantDoc provides canopy boundary localization.
+            # Dedicated bounding-box lesion spot localization is not part of this detector's ontology.
+            # Sub-pixel foliar pathology is evaluated via Mobile-UNet foliar segmentation in Tier 3.
+            lesion_detections = []
+            raw_lesion_count = 0
+            post_nms_lesion_count = 0
 
             # Unified list for legacy consumers, sorted: canopy boundaries first, lesion foci second
-            detected_boxes = specimen_detections + lesion_detections
-            raw_detection_count = raw_specimen_count + raw_lesion_count
+            detected_boxes = specimen_detections
+            raw_detection_count = raw_specimen_count
             post_filtering_count = len(detected_boxes)
             canopy_box_count = len(specimen_detections)
             specimen_box_count = len(specimen_detections)
-            lesion_box_count = len(lesion_detections)
+            lesion_box_count = 0
 
             # Define honest localization capability and scientific notice
-            if len(lesion_detections) > 0 and len(specimen_detections) > 0:
-                localization_capability = "specimen_boundary_and_lesion_foci"
-                localization_notice = (
-                    f"Dual spatial localization active: {len(specimen_detections)} specimen canopy boundary region(s) "
-                    f"from {detection_engine_name} and {len(lesion_detections)} verified lesion spot foci "
-                    f"from YOLOv8n Lesion Spot Detector."
-                )
-            elif len(lesion_detections) > 0:
-                localization_capability = "lesion_foci_only"
-                localization_notice = f"Lesion focus localization active: {len(lesion_detections)} verified lesion spot foci localized."
-            elif len(specimen_detections) > 0:
+            if len(specimen_detections) > 0:
                 localization_capability = "specimen_boundary_only"
                 localization_notice = (
-                    f"Current {detection_engine_name} provides specimen/foliage canopy boundary localization only. "
-                    f"PlantDoc dataset annotations enclose entire leaves; dedicated lesion-level spot annotations "
-                    f"are not present in this detector's ontology."
+                    f"Current {detection_engine_name} provides specimen canopy boundary localization ({len(specimen_detections)} foliar region(s)). "
+                    f"Dedicated bounding-box lesion spot localization is not part of this detector's ontology; "
+                    f"sub-pixel foliar pathology is evaluated via Mobile-UNet foliar segmentation."
                 )
             else:
                 localization_capability = "unavailable"
-                localization_notice = "No spatial boundaries or lesion foci detected above confidence threshold."
+                localization_notice = "No foliage canopy boundaries detected above confidence threshold."
 
             t2_latency_ms = (time.time() - t2_start) * 1000.0
 
@@ -1297,9 +1051,6 @@ class InferenceEngine:
                 else:
                     localization_capability = "unavailable"
                     localization_notice = "Specimen verified as healthy foliage with zero pathological lesion foci."
-            elif len(lesion_detections) > 0:
-                final_lesion_foci_count = len(lesion_detections)
-                final_lesion_foci_source = "yolov8n_lesions_detector"
             elif is_infected and pred_mask_256 is not None and lesion_pixels > 0:
                 n_comp, _, _, _ = cv2.connectedComponentsWithStats((pred_mask_256 == 2).astype(np.uint8), connectivity=8)
                 final_lesion_foci_count = max(0, n_comp - 1)

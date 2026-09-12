@@ -66,41 +66,17 @@ async def readiness_probe(response: Response) -> ReadinessStatusResponse:
             checkpoint=settings.EDGE_TIER1_MODEL_PATH.name if settings.EDGE_TIER1_MODEL_PATH.exists() else None,
             details=engine.model_status_map.get("tier1_edge")
         ),
-        "tier1_gen2_classifier": ComponentReadiness(
-            ready=engine.model_tier1_gen2 is not None,
-            name="EfficientNetV2-S Gen-2 Tri-Domain Classifier",
-            checkpoint=settings.GEN2_TIER1_MODEL_PATH.name if settings.GEN2_TIER1_MODEL_PATH.exists() else None,
-            details=engine.model_status_map.get("tier1_gen2")
-        ),
-        "tier2_gen2_yolo26_detector": ComponentReadiness(
-            ready=engine.model_tier2_yolo26 is not None,
-            name="YOLO26-PlantDoc Specimen Canopy Detector (Gen-2)",
-            checkpoint=settings.GEN2_TIER2_YOLO26_MODEL_PATH.name if settings.GEN2_TIER2_YOLO26_MODEL_PATH.exists() else None,
-            details=engine.model_status_map.get("tier2_yolo26")
-        ),
         "tier2_plantdoc_detector": ComponentReadiness(
             ready=engine.model_tier2_plantdoc is not None,
             name="YOLO PlantDoc Specimen Canopy Detector",
             checkpoint=settings.TIER2_PLANTDOC_MODEL_PATH.name if settings.TIER2_PLANTDOC_MODEL_PATH.exists() else None,
             details=engine.model_status_map.get("tier2_plantdoc")
         ),
-        "tier2_lesion_detector": ComponentReadiness(
-            ready=engine.model_tier2 is not None,
-            name="YOLOv8n Foliar Pathology Lesion Spot Detector",
-            checkpoint=settings.TIER2_MODEL_PATH.name if settings.TIER2_MODEL_PATH.exists() else None,
-            details=engine.model_status_map.get("tier2_lesions")
-        ),
         "tier3_unet_segmenter": ComponentReadiness(
             ready=engine.model_tier3 is not None,
             name="Mobile-UNet Foliar/Lesion Segmenter",
             checkpoint=settings.TIER3_MODEL_PATH.name if settings.TIER3_MODEL_PATH.exists() else None,
             details=engine.model_status_map.get("tier3_unet")
-        ),
-        "tier3_gen2_unet_segmenter": ComponentReadiness(
-            ready=engine.model_tier3_gen2 is not None,
-            name="Mobile-UNet Gen-2 Foliar Damage Segmenter",
-            checkpoint=settings.GEN2_TIER3_UNET_MODEL_PATH.name if settings.GEN2_TIER3_UNET_MODEL_PATH.exists() else None,
-            details=engine.model_status_map.get("tier3_gen2")
         ),
         "crop_recommender": ComponentReadiness(
             ready=crop_service.is_ready,
@@ -157,13 +133,9 @@ async def models_status() -> ModelsStatusResponse:
             pass
 
     t1_server_size = settings.SERVER_TIER1_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.SERVER_TIER1_MODEL_PATH.exists() else 0.0
-    t1_gen2_size = settings.GEN2_TIER1_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.GEN2_TIER1_MODEL_PATH.exists() else 0.0
     t1_edge_size = settings.EDGE_TIER1_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.EDGE_TIER1_MODEL_PATH.exists() else 0.0
-    t2_size = settings.TIER2_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.TIER2_MODEL_PATH.exists() else 0.0
     t2_pdoc_size = settings.TIER2_PLANTDOC_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.TIER2_PLANTDOC_MODEL_PATH.exists() else 0.0
-    t2_gen2_size = settings.GEN2_TIER2_YOLO26_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.GEN2_TIER2_YOLO26_MODEL_PATH.exists() else 0.0
     t3_size = settings.TIER3_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.TIER3_MODEL_PATH.exists() else 0.0
-    t3_gen2_size = settings.GEN2_TIER3_UNET_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.GEN2_TIER3_UNET_MODEL_PATH.exists() else 0.0
     crop_size = settings.CROP_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.CROP_MODEL_PATH.exists() else 0.0
 
     models_info = [
@@ -176,14 +148,6 @@ async def models_status() -> ModelsStatusResponse:
             description="38-class universal plant pathology classification with verified Test Top-1 95.13%, Macro F1 0.9354, ECE 0.0803 (256x256)"
         ),
         ModelInfo(
-            name="Gen-2 Tri-Domain EfficientNetV2-S Classifier",
-            tier="Tier 1 Vision (Gen-2)",
-            checkpoint=settings.GEN2_TIER1_MODEL_PATH.name,
-            size_mb=round(t1_gen2_size, 2),
-            status="ready" if engine.model_tier1_gen2 is not None else "missing",
-            description="Multi-domain tri-dataset plant pathology classification with verified Test Top-1 95.42%, Macro F1 0.9388, ECE 0.0765 (256x256)"
-        ),
-        ModelInfo(
             name="MobileNetV2 Edge Classifier",
             tier="Tier 1 Vision (Edge)",
             checkpoint=settings.EDGE_TIER1_MODEL_PATH.name,
@@ -192,36 +156,12 @@ async def models_status() -> ModelsStatusResponse:
             description="38-class high-speed studio leaf screening (224x224)"
         ),
         ModelInfo(
-            name="YOLO26-PlantDoc Specimen Canopy Detector (Gen-2)",
-            tier="Tier 2 Vision (Gen-2 Multi-Domain)",
-            checkpoint=settings.GEN2_TIER2_YOLO26_MODEL_PATH.name,
-            size_mb=round(t2_gen2_size, 2),
-            status="ready" if engine.model_tier2_yolo26 is not None else "missing",
-            description="YOLO26 29-class multi-domain specimen foliage canopy detector (val mAP@50: 0.3584, mAP@50-95: 0.2512)"
-        ),
-        ModelInfo(
             name="YOLO PlantDoc Specimen Canopy Detector",
             tier="Tier 2 Vision (PlantDoc)",
             checkpoint=settings.TIER2_PLANTDOC_MODEL_PATH.name,
             size_mb=round(t2_pdoc_size, 2),
             status="ready" if engine.model_tier2_plantdoc is not None else "missing",
             description="29-class field foliage specimen boundary detection on natural background (val mAP@50: 0.3362, mAP@50-95: 0.2361)"
-        ),
-        ModelInfo(
-            name="YOLOv8n Foliar Pathology Lesion Spot Detector",
-            tier="Tier 2 Vision (Lesion Foci)",
-            checkpoint=settings.TIER2_MODEL_PATH.name,
-            size_mb=round(t2_size, 2),
-            status="ready" if engine.model_tier2 is not None else "missing",
-            description="Granular spot-level necrotic lesion detector for Early Blight and necrotic focal blight (640x640 letterbox)"
-        ),
-        ModelInfo(
-            name="Mobile-UNet Gen-2 Foliar Damage Segmenter",
-            tier="Tier 3 Vision (Gen-2)",
-            checkpoint=settings.GEN2_TIER3_UNET_MODEL_PATH.name,
-            size_mb=round(t3_gen2_size, 2),
-            status="ready" if engine.model_tier3_gen2 is not None else "missing",
-            description="Sub-pixel foliar damage and necrotic lesion segmentation (mIoU: 0.7485, Lesion Dice: 0.7012)"
         ),
         ModelInfo(
             name="Mobile-UNet Foliar/Lesion Segmenter",

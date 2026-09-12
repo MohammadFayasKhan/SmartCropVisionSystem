@@ -80,7 +80,7 @@ class Settings:
     SERVER_TIER1_MODEL_PATH: Path = Path(os.getenv("SERVER_TIER1_MODEL_PATH", str(MODEL_DIR / "efficientnetv2_s_best.pt")))
     EDGE_TIER1_MODEL_PATH: Path = Path(os.getenv("EDGE_TIER1_MODEL_PATH", str(MODEL_DIR / "mobilenet_v2_38classes_best.pth")))
     TIER1_MODEL_PATH: Path = SERVER_TIER1_MODEL_PATH
-    TIER2_MODEL_PATH: Path = Path(os.getenv("TIER2_MODEL_PATH", str(MODEL_DIR / "yolov8n_lesions_best.pt")))
+    TIER2_MODEL_PATH: Path = Path(os.getenv("TIER2_MODEL_PATH", str(MODEL_DIR / "yolo_plantdoc_best.pt")))
     TIER2_PLANTDOC_MODEL_PATH: Path = Path(os.getenv("TIER2_PLANTDOC_MODEL_PATH", str(MODEL_DIR / "yolo_plantdoc_best.pt")))
     TIER3_MODEL_PATH: Path = Path(os.getenv("TIER3_MODEL_PATH", str(MODEL_DIR / "mobile_unet_best.pt")))
     DEFAULT_TIER1_MODEL: str = os.getenv("DEFAULT_TIER1_MODEL", "server")

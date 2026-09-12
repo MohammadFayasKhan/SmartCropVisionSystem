@@ -1864,8 +1864,10 @@ async function runVisionPrediction(includeExplainability = true) {
     const validation = data.image_validation;
     const isRejected = Boolean(
       data.status === "rejected" ||
+      !data.diagnosis ||
       (validation && !validation.is_inference_allowed) ||
       (validation && validation.inference_allowed === false) ||
+      (validation && validation.validation_status && validation.validation_status !== "VALID_PLANT_IMAGE") ||
       data.diagnosis?.predicted_class === "N/A" ||
       data.diagnosis?.condition_type === "invalid_input"
     );
@@ -2162,10 +2164,7 @@ function renderVisionDiagnosis(diag) {
   if (modelBadge) {
     modelBadge.style.display = "inline-flex";
     const tier = diag.model_tier || currentVisionModelTier;
-    if (tier === "gen2" || tier === "server_gen2") {
-      modelBadge.textContent = "🚀 Gen-2: Tri-Domain + YOLO26";
-      modelBadge.title = diag.model_architecture || "Gen-2 Tri-Domain (EfficientNetV2-S + YOLO26 + Mobile-UNet)";
-    } else if (tier === "server") {
+    if (tier === "server") {
       modelBadge.textContent = "🧠 Server: EfficientNetV2-S";
       modelBadge.title = diag.model_architecture || "Server-Grade EfficientNetV2-S (256x256, Test Acc 95.13%, Macro F1 0.9354)";
     } else if (tier === "edge") {
@@ -2297,7 +2296,7 @@ function renderVisionDiagnosis(diag) {
 
       <div class="rec-env-pills" style="margin-top: 12px;">
         <span class="env-pill" title="Foliar area compromised derived strictly from segmentation mask">📊 Damage: ${damageDisplay}</span>
-        <span class="env-pill" title="Targeted lesion spot foci verified by YOLOv8n Lesions or Mobile-UNet segmentation">🎯 Foci Detected: ${diag.lesion_foci_count != null ? diag.lesion_foci_count : 0}</span>
+        <span class="env-pill" title="Targeted lesion spot foci verified by Mobile-UNet foliar segmentation">🎯 Foci Detected: ${diag.lesion_foci_count != null ? diag.lesion_foci_count : 0}</span>
         <span class="env-pill">🧪 Condition: ${escapeHtml(diag.condition_type || (isInfected ? "Fungal / Pathological" : "Healthy Foliage"))}</span>
       </div>
 
@@ -2709,7 +2708,7 @@ function renderSpatialTelemetry(data) {
 
     if (genuineLesionCount > 0) {
       fociVal.textContent = `${genuineLesionCount} (Verified lesions)`;
-      fociVal.title = "Targeted pathology lesions detected by YOLOv8n Lesion Spot Detector";
+      fociVal.title = "Targeted pathology lesions detected by YOLO PlantDoc Specimen Detector";
     } else if (fociSource === "mobile_unet_segmentation" && lesionFociCount > 0) {
       fociVal.textContent = `${lesionFociCount} (Segmentation foci)`;
       fociVal.title = `${lesionFociCount} discrete necrotic lesion foci identified via Mobile-UNet semantic segmentation`;

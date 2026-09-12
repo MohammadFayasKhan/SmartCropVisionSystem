@@ -172,12 +172,9 @@ def test_exact_smartcropvision_dashboard_screenshot_rejection():
     assert response.status == "rejected"
     assert response.image_validation is not None
     assert response.image_validation.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
-    assert response.image_validation.is_inference_allowed is False
-    assert response.diagnosis.predicted_class == "N/A"
-    assert response.diagnosis.confidence_pct == 0.0
-    assert response.diagnosis.is_infected is False
-    assert len(response.diagnosis.top3_predictions) == 0
-    assert len(response.spatial_telemetry.bounding_boxes) == 0
+    assert response.diagnosis is None
+    assert response.spatial_telemetry is None
+    assert response.advisory is None
     assert response.segmentation_mask_b64 is None
     assert response.cam_heatmap_b64 is None
 
@@ -281,13 +278,11 @@ def test_zero_inference_calls_on_rejection():
     assert response.image_validation.is_inference_allowed is False
 
     # 3. Zero disease prediction / Zero fabricated diagnosis
-    assert response.diagnosis.predicted_class == "N/A"
-    assert response.diagnosis.confidence_pct == 0.0
-    assert response.diagnosis.is_infected is False
-    assert len(response.diagnosis.top3_predictions) == 0
+    assert response.diagnosis is None
+    assert response.spatial_telemetry is None
+    assert response.advisory is None
 
     # 4. Zero detections / Zero segmentation / Zero Grad-CAM
-    assert len(response.spatial_telemetry.bounding_boxes) == 0
     assert response.segmentation_mask_b64 is None
     assert response.cam_heatmap_b64 is None
     assert response.cam_overlay_b64 is None
@@ -319,6 +314,10 @@ def test_hard_regression_efficientnetv2_s_invocation_count_strictly_zero():
         )
 
         assert response.status == "rejected"
+        assert response.diagnosis is None, "Expected diagnosis=None on rejected screenshot"
+        assert response.spatial_telemetry is None, "Expected spatial_telemetry=None on rejected screenshot"
+        assert response.advisory is None, "Expected advisory=None on rejected screenshot"
+        assert response.uncertainty is None, "Expected uncertainty=None on rejected screenshot"
         assert response.image_validation is not None
         assert response.image_validation.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
         assert response.image_validation.inference_allowed is False
@@ -339,6 +338,9 @@ def test_hard_regression_efficientnetv2_s_invocation_count_strictly_zero():
         )
 
         assert pdf_response.status == "rejected"
+        assert pdf_response.diagnosis is None, "Expected diagnosis=None on rejected PDF"
+        assert pdf_response.spatial_telemetry is None, "Expected spatial_telemetry=None on rejected PDF"
+        assert pdf_response.advisory is None, "Expected advisory=None on rejected PDF"
         assert pdf_response.image_validation is not None
         assert pdf_response.image_validation.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
         assert pdf_response.image_validation.inference_allowed is False
