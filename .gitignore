@@ -17,6 +17,7 @@ scratch/
 .env
 .env.local
 .env.*.local
+*.PublishSettings
 
 # Operating system files
 .DS_Store
