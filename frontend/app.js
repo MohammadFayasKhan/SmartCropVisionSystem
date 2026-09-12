@@ -65,18 +65,20 @@ let activeVisionRequestId = null;
 function setVisionUIState(newState, detailText = "") {
   currentVisionState = newState;
   const statusEl = document.getElementById("visionStateStatus");
+  const textEl = document.getElementById("visionStateStatusText");
+  const dotEl = document.getElementById("visionStatusPulseDot");
   const analyzeBtn = document.getElementById("visionAnalyzeBtn");
   const progressStage = document.getElementById("analysisProgressStage");
 
   const stateLabels = {
     [VisionUIState.EMPTY]: "Status: Idle · Awaiting Specimen",
     [VisionUIState.IMAGE_SELECTED]: "Status: Specimen Selected · Preflight Checking...",
-    [VisionUIState.VALIDATING]: "Status: Validating Specimen Domain & Quality...",
+    [VisionUIState.VALIDATING]: "Status: Validating Specimen Quality...",
     [VisionUIState.VALID_PLANT_IMAGE]: "Status: Specimen Verified · Ready for Analysis",
-    [VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT]: "Status: Invalid Image · Screenshot or Document Rejected",
-    [VisionUIState.INVALID_NON_PLANT_IMAGE]: "Status: Invalid Image · Non-Plant Specimen Rejected",
-    [VisionUIState.LOW_QUALITY_IMAGE]: "Status: Invalid Image · Image Quality Insufficient",
-    [VisionUIState.VALIDATION_UNCERTAIN]: "Status: Invalid Image · Plant Presence Uncertain",
+    [VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT]: "Status: Rejected · Screenshot / Document Detected",
+    [VisionUIState.INVALID_NON_PLANT_IMAGE]: "Status: Rejected · Non-Plant Specimen",
+    [VisionUIState.LOW_QUALITY_IMAGE]: "Status: Rejected · Image Quality Insufficient",
+    [VisionUIState.VALIDATION_UNCERTAIN]: "Status: Rejected · Foliar Presence Uncertain",
     [VisionUIState.ANALYZING]: "Status: Executing Neural Inference Cascade...",
     [VisionUIState.RESULTS_READY]: "Status: Diagnostics Complete",
     [VisionUIState.ERROR]: "Status: Diagnostic Error"
@@ -89,16 +91,43 @@ function setVisionUIState(newState, detailText = "") {
     VisionUIState.VALIDATION_UNCERTAIN
   ].includes(newState);
 
+  const isWorkingState = [
+    VisionUIState.VALIDATING,
+    VisionUIState.ANALYZING
+  ].includes(newState);
+
+  const label = stateLabels[newState] || newState;
+  if (textEl) {
+    textEl.textContent = label;
+  } else if (statusEl) {
+    statusEl.innerHTML = `<span class="status-pulse-dot" id="visionStatusPulseDot" style="width: 7px; height: 7px; border-radius: 50%; background: var(--green-bright); display: inline-block; flex-shrink: 0;"></span><span id="visionStateStatusText">${label}</span>`;
+  }
+
   if (statusEl) {
-    statusEl.textContent = detailText ? `${stateLabels[newState] || newState} (${detailText})` : (stateLabels[newState] || newState);
     if (isRejectedState) {
       statusEl.style.borderColor = "rgba(239, 35, 60, 0.5)";
       statusEl.style.background = "rgba(239, 35, 60, 0.1)";
       statusEl.style.color = "#ff8a9a";
+      if (dotEl) {
+        dotEl.style.background = "#ff4d6d";
+        dotEl.style.boxShadow = "0 0 8px rgba(255, 77, 109, 0.6)";
+      }
+    } else if (isWorkingState) {
+      statusEl.style.borderColor = "rgba(255, 209, 102, 0.5)";
+      statusEl.style.background = "rgba(255, 209, 102, 0.1)";
+      statusEl.style.color = "#ffd166";
+      if (dotEl) {
+        dotEl.style.background = "#ffd166";
+        dotEl.style.boxShadow = "0 0 8px rgba(255, 209, 102, 0.6)";
+      }
     } else {
       statusEl.style.borderColor = "rgba(82, 183, 136, 0.2)";
       statusEl.style.background = "rgba(82, 183, 136, 0.08)";
       statusEl.style.color = "var(--green-bright)";
+      if (dotEl) {
+        dotEl.style.background = "var(--green-bright)";
+        dotEl.style.boxShadow = "0 0 8px rgba(82, 183, 136, 0.6)";
+      }
     }
   }
 
@@ -772,6 +801,7 @@ async function runPrediction() {
   };
 
   showLoading("Calculating Crop Intelligence & Disease Risks...");
+  renderCropSkeletonLoading();
 
   try {
     const res = await fetch(`${API_BASE}/predict`, {
@@ -1532,6 +1562,17 @@ function renderInvalidImagePanel(validation, isScreenshot = false, isNonPlant = 
       </div>
     </div>
   `;
+
+  const advisoryContent = document.getElementById("visionAdvisoryContent");
+  if (advisoryContent) {
+    advisoryContent.innerHTML = `
+      <div class="placeholder-state">
+        <div class="placeholder-icon">📋</div>
+        <p>Actionable agronomic advisory, chemical treatment protocols, and cultural practices will be computed upon leaf analysis</p>
+      </div>
+    `;
+  }
+  document.getElementById("visionSection")?.classList.add("has-results");
 }
 
 async function processSelectedImageFile(file, isSample = false) {
@@ -1723,6 +1764,91 @@ function selectModelTier(tier) {
   }
 }
 
+function renderCropSkeletonLoading() {
+  const recContent = document.getElementById("recommendationContent");
+  const disContent = document.getElementById("diseaseContent");
+  const section = document.getElementById("cropSection");
+  if (section) section.classList.add("has-results");
+
+  if (recContent) {
+    recContent.innerHTML = `
+      <div class="crop-skeleton-wrap" aria-busy="true" aria-label="Calculating crop suitability">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div class="skeleton-pulse skeleton-circle" style="width: 52px; height: 52px; flex-shrink: 0;"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div class="skeleton-pulse" style="height: 28px; width: 60%;"></div>
+            <div class="skeleton-pulse" style="height: 16px; width: 35%;"></div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+          <div class="skeleton-pulse skeleton-badge" style="height: 52px;"></div>
+          <div class="skeleton-pulse skeleton-badge" style="height: 52px;"></div>
+          <div class="skeleton-pulse skeleton-badge" style="height: 52px;"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (disContent) {
+    disContent.innerHTML = `
+      <div class="crop-skeleton-wrap" aria-busy="true" aria-label="Evaluating agro-climatic pathogen risk">
+        <div class="skeleton-pulse skeleton-badge" style="height: 22px; width: 45%;"></div>
+        <div class="skeleton-pulse" style="height: 48px; width: 100%;"></div>
+        <div class="skeleton-pulse" style="height: 48px; width: 100%;"></div>
+      </div>
+    `;
+  }
+}
+
+function renderVisionSkeletonLoading() {
+  const resultContent = document.getElementById("visionResultContent");
+  const advisoryContent = document.getElementById("visionAdvisoryContent");
+  const section = document.getElementById("visionSection");
+  if (section) section.classList.add("has-results");
+
+  if (resultContent) {
+    resultContent.innerHTML = `
+      <div class="vision-skeleton-wrap" aria-busy="true" aria-label="Analyzing foliar specimen">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div class="skeleton-pulse skeleton-badge" style="height: 26px; width: 42%;"></div>
+          <div class="skeleton-pulse skeleton-badge" style="height: 22px; width: 28%;"></div>
+        </div>
+        <div class="skeleton-pulse" style="height: 36px; width: 75%; margin-top: 4px;"></div>
+        <div class="skeleton-pulse" style="height: 18px; width: 45%;"></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+          <div class="skeleton-pulse skeleton-badge" style="height: 64px;"></div>
+          <div class="skeleton-pulse skeleton-badge" style="height: 64px;"></div>
+          <div class="skeleton-pulse skeleton-badge" style="height: 64px;"></div>
+        </div>
+        <div class="skeleton-pulse" style="height: 54px; width: 100%; margin-top: 6px;"></div>
+      </div>
+    `;
+  }
+
+  if (advisoryContent) {
+    advisoryContent.innerHTML = `
+      <div class="advisory-skeleton-wrap" aria-busy="true" aria-label="Synthesizing agronomic protocol">
+        <div class="skeleton-pulse skeleton-badge" style="height: 24px; width: 48%;"></div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 6px;">
+          <div class="skeleton-pulse skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <div class="skeleton-pulse" style="height: 16px; width: 90%;"></div>
+            <div class="skeleton-pulse" style="height: 14px; width: 65%;"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 4px;">
+          <div class="skeleton-pulse skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <div class="skeleton-pulse" style="height: 16px; width: 80%;"></div>
+            <div class="skeleton-pulse" style="height: 14px; width: 50%;"></div>
+          </div>
+        </div>
+        <div class="skeleton-pulse skeleton-badge" style="height: 42px; width: 100%; margin-top: 4px;"></div>
+      </div>
+    `;
+  }
+}
+
 async function runVisionPrediction(includeExplainability = true) {
   if (!selectedVisionFile) {
     showErrorNotification("Please select or upload a leaf photograph first.");
@@ -1793,7 +1919,7 @@ async function runVisionPrediction(includeExplainability = true) {
       if (chipPreflight) chipPreflight.className = "step-chip done";
       if (chipClassify) chipClassify.className = "step-chip active";
     } else if (progressStep === 3) {
-      if (progressStage) progressStage.textContent = "3. Localizing lesion foci (YOLO PlantDoc)...";
+      if (progressStage) progressStage.textContent = "3. Localizing foliage & lesion foci (YOLO26)...";
       if (chipClassify) chipClassify.className = "step-chip done";
       if (chipDetect) chipDetect.className = "step-chip active";
     } else if (progressStep === 4) {
@@ -1808,26 +1934,7 @@ async function runVisionPrediction(includeExplainability = true) {
   }, 450);
 
   // Render smooth skeleton loading placeholders in results area without blocking left preview!
-  const resultContent = document.getElementById("visionResultContent");
-  const advisoryContent = document.getElementById("visionAdvisoryContent");
-  if (resultContent) {
-    resultContent.innerHTML = `
-      <div style="padding: 18px; display: flex; flex-direction: column; gap: 12px;" aria-busy="true">
-        <div class="skeleton-pulse" style="height: 32px; width: 60%;"></div>
-        <div class="skeleton-pulse" style="height: 18px; width: 40%;"></div>
-        <div class="skeleton-pulse" style="height: 70px; width: 100%;"></div>
-      </div>
-    `;
-  }
-  if (advisoryContent) {
-    advisoryContent.innerHTML = `
-      <div style="padding: 18px; display: flex; flex-direction: column; gap: 10px;" aria-busy="true">
-        <div class="skeleton-pulse" style="height: 24px; width: 50%;"></div>
-        <div class="skeleton-pulse" style="height: 16px; width: 85%;"></div>
-        <div class="skeleton-pulse" style="height: 16px; width: 75%;"></div>
-      </div>
-    `;
-  }
+  renderVisionSkeletonLoading();
 
   const requestId = "req_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
   activeVisionRequestId = requestId;
@@ -2618,11 +2725,11 @@ function renderTechnicalDetails(data = {}) {
         <span class="tech-val">0.0803 (ECE)</span>
       </div>
       <div class="tech-item">
-        <span class="tech-label tooltip-wrap" tabindex="0" aria-label="Spatial Detector: YOLO PlantDoc mAP@50 0.3362.">
+        <span class="tech-label tooltip-wrap" tabindex="0" aria-label="Spatial Detector: YOLO26 Multi-Domain Agricultural Detector.">
           Spatial Detector ℹ️
-          <span class="tooltip-box" role="tooltip">Mean Average Precision at IoU 0.50 on the PlantDoc foliar lesion benchmark dataset.</span>
+          <span class="tooltip-box" role="tooltip">Mean Average Precision at IoU 0.50 on the multi-domain foliar lesion benchmark dataset.</span>
         </span>
-        <span class="tech-val">${telemetry.detection_engine || 'YOLO PlantDoc'} (mAP@50: 0.3362)</span>
+        <span class="tech-val">${telemetry.detection_engine || 'YOLO26 Multi-Domain Agricultural Detector'} (mAP@50: 0.3415)</span>
       </div>
       <div class="tech-item">
         <span class="tech-label tooltip-wrap" tabindex="0" aria-label="Semantic Segmenter: Mobile-UNet 3 Classes.">
@@ -2708,7 +2815,7 @@ function renderSpatialTelemetry(data) {
 
     if (genuineLesionCount > 0) {
       fociVal.textContent = `${genuineLesionCount} (Verified lesions)`;
-      fociVal.title = "Targeted pathology lesions detected by YOLO PlantDoc Specimen Detector";
+      fociVal.title = `${genuineLesionCount} targeted pathology lesion spots resolved & highlighted on foliage`;
     } else if (fociSource === "mobile_unet_segmentation" && lesionFociCount > 0) {
       fociVal.textContent = `${lesionFociCount} (Segmentation foci)`;
       fociVal.title = `${lesionFociCount} discrete necrotic lesion foci identified via Mobile-UNet semantic segmentation`;

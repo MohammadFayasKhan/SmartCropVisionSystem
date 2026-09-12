@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./style.css?v=20260910e" />
+  <link rel="stylesheet" href="./style.css?v=20260912_layout_skeleton" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -222,9 +222,9 @@
           <span class="panel-badge">38 CLASSES</span>
         </div>
 
-        <div class="state-status-bar" id="visionStateStatus" style="font-size: 0.76rem; padding: 5px 10px; margin: 0 0 12px 0; border-radius: var(--radius-sm); background: rgba(82, 183, 136, 0.08); border: 1px solid rgba(82, 183, 136, 0.2); color: var(--green-bright); display: flex; align-items: center; gap: 6px;" aria-live="polite">
-          <span class="status-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: var(--green-bright); display: inline-block;"></span>
-          <span>Status: Idle · Awaiting Specimen</span>
+        <div class="state-status-bar" id="visionStateStatus" style="font-size: 0.76rem; padding: 6px 12px; margin: 0; border-radius: var(--radius-sm); background: rgba(82, 183, 136, 0.08); border: 1px solid rgba(82, 183, 136, 0.2); color: var(--green-bright); display: flex; align-items: center; gap: 8px;" aria-live="polite">
+          <span class="status-pulse-dot" id="visionStatusPulseDot" style="width: 7px; height: 7px; border-radius: 50%; background: var(--green-bright); display: inline-block; flex-shrink: 0;"></span>
+          <span id="visionStateStatusText">Status: Idle · Awaiting Specimen</span>
         </div>
 
         <!-- Dedicated Hidden File Input (isolated outside dropzone to prevent event bubbling recursion) -->
@@ -374,7 +374,7 @@
             <div class="analysis-steps-preview">
               <span class="step-chip active" id="chip-step-preflight">1. Quality Preflight</span>
               <span class="step-chip" id="chip-step-classify">2. EfficientNetV2-S</span>
-              <span class="step-chip" id="chip-step-detect">3. YOLO PlantDoc</span>
+              <span class="step-chip" id="chip-step-detect">3. YOLO26 Detector</span>
               <span class="step-chip" id="chip-step-segment">4. Mobile-UNet</span>
               <span class="step-chip" id="chip-step-explain">5. Grad-CAM</span>
             </div>
@@ -589,6 +589,6 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="./app.js?v=20260911_foci"></script>
+  <script src="./app.js?v=20260912_layout_skeleton"></script>
 </body>
 </html>

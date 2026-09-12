@@ -134,7 +134,9 @@ async def models_status() -> ModelsStatusResponse:
 
     t1_server_size = settings.SERVER_TIER1_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.SERVER_TIER1_MODEL_PATH.exists() else 0.0
     t1_edge_size = settings.EDGE_TIER1_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.EDGE_TIER1_MODEL_PATH.exists() else 0.0
-    t2_pdoc_size = settings.TIER2_PLANTDOC_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.TIER2_PLANTDOC_MODEL_PATH.exists() else 0.0
+    is_yolo26 = getattr(engine, "model_tier2_is_yolo26", False)
+    t2_path = getattr(engine, "model_tier2_path", settings.GEN2_TIER2_YOLO26_MODEL_PATH if settings.GEN2_TIER2_YOLO26_MODEL_PATH.exists() else settings.TIER2_PLANTDOC_MODEL_PATH)
+    t2_size = t2_path.stat().st_size / (1024 * 1024) if t2_path.exists() else 0.0
     t3_size = settings.TIER3_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.TIER3_MODEL_PATH.exists() else 0.0
     crop_size = settings.CROP_MODEL_PATH.stat().st_size / (1024 * 1024) if settings.CROP_MODEL_PATH.exists() else 0.0
 
@@ -156,12 +158,12 @@ async def models_status() -> ModelsStatusResponse:
             description="38-class high-speed studio leaf screening (224x224)"
         ),
         ModelInfo(
-            name="YOLO PlantDoc Specimen Canopy Detector",
-            tier="Tier 2 Vision (PlantDoc)",
-            checkpoint=settings.TIER2_PLANTDOC_MODEL_PATH.name,
-            size_mb=round(t2_pdoc_size, 2),
+            name="YOLO26 Multi-Domain Agricultural Detector" if is_yolo26 else "YOLO PlantDoc Specimen Canopy Detector",
+            tier="Tier 2 Vision (YOLO26)" if is_yolo26 else "Tier 2 Vision (PlantDoc)",
+            checkpoint=t2_path.name,
+            size_mb=round(t2_size, 2),
             status="ready" if engine.model_tier2_plantdoc is not None else "missing",
-            description="29-class field foliage specimen boundary detection on natural background (val mAP@50: 0.3362, mAP@50-95: 0.2361)"
+            description="YOLO26 multi-domain agricultural detector for real-time foliar canopy boundary localization (val mAP@50: 0.3415, 640x640)" if is_yolo26 else "29-class field foliage specimen boundary detection on natural background (val mAP@50: 0.3362, mAP@50-95: 0.2361)"
         ),
         ModelInfo(
             name="Mobile-UNet Foliar/Lesion Segmenter",

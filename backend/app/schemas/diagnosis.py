@@ -78,6 +78,7 @@ class BoundingBox(BaseModel):
 
 class SpatialTelemetry(BaseModel):
     detection_engine: str = Field(..., description="Model and version utilized for spatial localization")
+    taxonomy_version: Optional[str] = Field(default="YOLO26-29Class-MultiDomain-v2.5", description="Detection taxonomy version identifier")
     bounding_boxes: List[BoundingBox] = Field(default_factory=list, description="List of all localized spatial bounding boxes")
     specimen_detections: List[BoundingBox] = Field(default_factory=list, description="Specimen / leaf / canopy boundary detections")
     lesion_detections: List[BoundingBox] = Field(default_factory=list, description="Genuine pathology / lesion focus detections")

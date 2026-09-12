@@ -550,6 +550,7 @@ input:checked + .slider-toggle::before {
     position       : relative;
     display        : flex;
     flex-direction : column;
+    gap            : 12px;
     padding-bottom : 28px;
     box-sizing     : border-box;
   }
@@ -558,6 +559,26 @@ input:checked + .slider-toggle::before {
   .sensor-panel > *,
   #visionInputPanel > * {
     flex-shrink: 0;
+  }
+
+  #visionInputPanel .state-status-bar {
+    margin: 0;
+  }
+
+  #visionInputPanel .validation-banner {
+    margin: 0;
+  }
+
+  #visionInputPanel .model-selector-box {
+    margin: 0;
+  }
+
+  #visionInputPanel .vision-presets {
+    margin: 0;
+  }
+
+  #visionInputPanel .vision-cta-btn {
+    margin: 4px 0 0 0;
   }
 
   /* Smoothly Scrollable Right Intelligence Panel */
@@ -581,6 +602,7 @@ input:checked + .slider-toggle::before {
     flex-shrink: 0;
     width      : 100%;
     box-sizing : border-box;
+    min-height : fit-content;
   }
 
   /* In empty placeholder state, stretch cards symmetrically to eliminate bottom void */
@@ -594,15 +616,18 @@ input:checked + .slider-toggle::before {
     min-height    : 220px;
   }
 
-  /* When analysis results are present, cards expand naturally to their full content height */
+  /* When analysis results, rejections, or skeletons are present, cards expand naturally to their full content height */
   #visionSection.has-results #visionResultPanel,
   #visionSection.has-results #visionAdvisoryPanel,
   #cropSection.has-results #recommendationPanel,
-  #cropSection.has-results .chart-panel {
+  #cropSection.has-results .chart-panel,
+  #visionResultPanel:has(.invalid-image-panel),
+  #visionResultPanel:has(.crop-result),
+  #visionResultPanel:has(.vision-skeleton-wrap) {
     display       : flex;
     flex-direction: column;
-    flex          : 0 0 auto;
-    min-height    : auto;
+    flex          : 0 0 auto !important;
+    min-height    : auto !important;
   }
 
   /* Content containers always flow naturally from top to bottom (never center tall content over headers) */
@@ -2429,12 +2454,47 @@ input:checked + .slider-toggle::before {
 }
 
 /* ── Skeleton Loading States ────────────────────────────────────────── */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .skeleton-pulse {
-  background: linear-gradient(90deg, rgba(82, 183, 136, 0.05) 25%, rgba(82, 183, 136, 0.15) 50%, rgba(82, 183, 136, 0.05) 75%);
+  background: linear-gradient(
+    90deg,
+    rgba(82, 183, 136, 0.05) 0%,
+    rgba(82, 183, 136, 0.15) 25%,
+    rgba(82, 183, 136, 0.28) 50%,
+    rgba(82, 183, 136, 0.15) 75%,
+    rgba(82, 183, 136, 0.05) 100%
+  );
   background-size: 200% 100%;
-  animation: skeletonShimmer 1.6s infinite ease-in-out;
+  animation: skeletonShimmer 1.8s infinite linear;
   border-radius: var(--radius-sm);
-  min-height: 20px;
+  display: block;
+  min-height: 16px;
+}
+
+.skeleton-circle {
+  border-radius: 50% !important;
+}
+
+.skeleton-badge {
+  border-radius: 12px !important;
+}
+
+.vision-skeleton-wrap,
+.advisory-skeleton-wrap,
+.crop-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ── Compact Quality Pill & Drawer (Subordinate Non-Blocking Indicator) ── */
@@ -2712,10 +2772,13 @@ input:checked + .slider-toggle::before {
   left        : 50%;
   margin-left : -5px;
   border-width: 5px;
+  border-style: solid;
+  border-color: #0d210d transparent transparent transparent;
+}
+
 /* ── Pre-Inference Domain Validation Banner ──────────────────────────── */
 .validation-banner {
-  margin-top    : 10px;
-  margin-bottom : 12px;
+  margin        : 0;
   padding       : 12px 14px;
   border-radius : var(--radius-sm);
   display       : flex;
@@ -2725,6 +2788,7 @@ input:checked + .slider-toggle::before {
   line-height   : 1.45;
   box-shadow    : 0 4px 14px rgba(0, 0, 0, 0.25);
   animation     : fadeIn 0.2s ease-out;
+  flex-shrink   : 0;
 }
 
 .validation-banner-rejected {
