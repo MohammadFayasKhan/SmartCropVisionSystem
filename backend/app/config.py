@@ -4,10 +4,12 @@ Centralizes environment-driven configuration for production, testing, and develo
 Provides dynamic checkpoint resolution, upload bounds, security limits, and CORS policies.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 import os
 import json
-from typing import List
+from typing import List, Optional, Dict, Any
 
 # Resolve project root directory dynamically relative to this file
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -16,7 +18,7 @@ PROJECT_ROOT = BACKEND_DIR.parent
 try:
     from dotenv import load_dotenv
     load_dotenv(PROJECT_ROOT / ".env")
-except ImportError:
+except Exception:
     pass
 
 def _parse_cors_origins(raw: str) -> List[str]:
