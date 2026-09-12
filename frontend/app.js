@@ -28,9 +28,8 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = { escapeHTML, escapeHtml };
 }
 
-// ── API CONFIGURATION (Configurable at runtime) ──────────────────────────────
 const API_BASE = (typeof window !== "undefined" && window.SMARTCROP_API_BASE) || 
-  (typeof window !== "undefined" && window.location && window.location.port === "8000" ? "" : "http://localhost:8000");
+  (typeof window !== "undefined" && window.location && window.location.protocol && window.location.protocol.startsWith("http") ? "" : "http://localhost:8000");
 
 // ── EXPLICIT VISION UI STATE MACHINE ──────────────────────────────────────────
 const VisionUIState = {
