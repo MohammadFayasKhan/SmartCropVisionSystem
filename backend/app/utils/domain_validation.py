@@ -342,6 +342,51 @@ def validate_plant_image(
     is_noise = signals["is_noise_like"]
     is_screenshot_or_doc = signals.get("is_screenshot_or_document", False)
 
+    # 0. Groq Multimodal Vision Semantic Preflight Validator
+    # Provides upstream semantic rejection of software screenshots, dashboards, documents, vehicles, portraits.
+    # Seamlessly falls back to local CV algorithms if Groq is disabled, timed out, or rate-limited.
+    try:
+        from backend.app.services.groq_validator import groq_vision_validator
+        groq_res = groq_vision_validator.validate_image(img_bgr, filename=filename)
+        if groq_res is not None:
+            signals["groq_vision"] = {
+                "valid": groq_res.valid,
+                "category": groq_res.category,
+                "suitable_for_crop_analysis": groq_res.suitable_for_crop_analysis,
+                "reason": groq_res.reason,
+                "latency_ms": groq_res.latency_ms,
+                "model_used": groq_res.model_used
+            }
+            if not groq_res.inference_allowed or groq_res.category in ("screenshot_document", "non_plant"):
+                if groq_res.category == "screenshot_document":
+                    return DomainValidationResult(
+                        validation_status="INVALID_SCREENSHOT_OR_DOCUMENT",
+                        validation_reason=groq_res.reason or "Invalid image. This appears to be a screenshot or document rather than a plant photograph.",
+                        validation_confidence=0.98,
+                        plant_presence=False,
+                        leaf_presence=False,
+                        image_quality="Digital Screenshot / UI / Document (Groq Vision Verified)",
+                        is_inference_allowed=False,
+                        telemetry=signals,
+                        screenshot_or_document_probability=0.99,
+                        inference_allowed=False
+                    )
+                else:
+                    return DomainValidationResult(
+                        validation_status="INVALID_NON_PLANT_IMAGE",
+                        validation_reason=groq_res.reason or "Invalid image. This appears to be a non-plant subject rather than a crop leaf.",
+                        validation_confidence=0.98,
+                        plant_presence=False,
+                        leaf_presence=False,
+                        image_quality="Non-Plant Subject (Groq Vision Verified)",
+                        is_inference_allowed=False,
+                        telemetry=signals,
+                        screenshot_or_document_probability=signals.get("screenshot_or_document_probability", 0.0),
+                        inference_allowed=False
+                    )
+    except Exception as groq_err:
+        pass  # Proceed safely to local computer vision validation
+
     # 1. Hardware Object Detection Signal (YOLO PlantDoc genuine positive evidence)
     detector_leaf_boxes = 0
     detector_top_conf = 0.0

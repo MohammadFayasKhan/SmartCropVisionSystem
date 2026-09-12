@@ -13,6 +13,12 @@ from typing import List
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BACKEND_DIR.parent
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env")
+except ImportError:
+    pass
+
 def _parse_cors_origins(raw: str) -> List[str]:
     """Safely parse comma-separated or JSON string of CORS origins."""
     if not raw:
@@ -50,6 +56,12 @@ class Settings:
     CORS_ORIGINS: List[str] = _parse_cors_origins(os.getenv("CORS_ORIGINS", ""))
     ALLOW_CREDENTIALS: bool = os.getenv("ALLOW_CREDENTIALS", "true").lower() in ("true", "1", "yes")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "smartcropvision-insecure-dev-key-change-in-prod")
+
+    # Groq Cloud Multimodal Intelligence & Semantic Validation Gateway
+    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY", None)
+    GROQ_VISION_MODEL: str = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")
+    GROQ_VISION_ENABLED: bool = os.getenv("GROQ_VISION_ENABLED", "true").lower() in ("true", "1", "yes")
+    GROQ_VISION_TIMEOUT: float = float(os.getenv("GROQ_VISION_TIMEOUT", "6.0"))
 
     # Image upload bounds and decompression bomb protections
     MAX_UPLOAD_SIZE_BYTES: int = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(15 * 1024 * 1024)))  # 15 MB

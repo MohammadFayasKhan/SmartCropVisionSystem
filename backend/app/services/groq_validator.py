@@ -1,0 +1,226 @@
+"""
+Groq Multimodal Vision Semantic Preflight Validator for SmartCropVision.
+Evaluates uploaded images upstream of local computer vision models to establish
+whether the input is an authentic crop or plant leaf photograph rather than
+a software screenshot, dashboard, document, PDF, vehicle, person, or unrelated object.
+
+Architectural principles:
+  1. Groq Vision is strictly an input suitability and domain safety gate.
+  2. Groq Vision never performs disease diagnosis or pathological classification.
+  3. If Groq Vision rejects the image, the pipeline terminates immediately with zero model invocations.
+  4. If Groq Vision encounters a network timeout, rate limit, or transient error, the system
+     falls back safely to local deterministic computer vision checks.
+"""
+
+import base64
+import json
+import logging
+import re
+import time
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
+
+import cv2
+import numpy as np
+import requests
+
+from backend.app.config import settings
+
+logger = logging.getLogger("smartcropvision.groq_validator")
+
+
+@dataclass
+class GroqValidationResult:
+    valid: bool
+    category: str  # "plant_leaf", "screenshot_document", "non_plant", "uncertain"
+    plant_present: bool
+    leaf_present: bool
+    suitable_for_crop_analysis: bool
+    reason: str
+    inference_allowed: bool
+    latency_ms: float
+    model_used: str
+    raw_response: Optional[Dict[str, Any]] = None
+
+
+class GroqVisionValidator:
+    """
+    Client for Groq Multimodal Vision models (Qwen 3.8 27B / Qwen 3.6 27B).
+    Provides structured semantic domain verification with robust fallbacks.
+    """
+
+    GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        timeout: Optional[float] = None
+    ):
+        self.api_key = api_key or settings.GROQ_API_KEY
+        self.model = model or settings.GROQ_VISION_MODEL
+        self.enabled = enabled if enabled is not None else settings.GROQ_VISION_ENABLED
+        self.timeout = timeout or settings.GROQ_VISION_TIMEOUT
+
+    def validate_image(
+        self,
+        img_bgr: np.ndarray,
+        filename: Optional[str] = None
+    ) -> Optional[GroqValidationResult]:
+        """
+        Submits an image to Groq Vision for semantic plant photograph verification.
+        Returns GroqValidationResult if successful, or None if validation failed or is disabled.
+        """
+        if not self.enabled:
+            logger.debug("Groq vision validation is disabled by configuration.")
+            return None
+
+        if not self.api_key or not self.api_key.strip() or self.api_key.startswith("replace-with"):
+            logger.debug("Groq vision API key is not configured.")
+            return None
+
+        start_time = time.time()
+
+        try:
+            # 1. Downscale image to max 480px on longest dimension to minimize transmission and token costs
+            h, w = img_bgr.shape[:2]
+            max_dim = 480
+            if max(h, w) > max_dim:
+                scale = max_dim / float(max(h, w))
+                target_w = max(32, int(w * scale))
+                target_h = max(32, int(h * scale))
+                scaled = cv2.resize(img_bgr, (target_w, target_h), interpolation=cv2.INTER_AREA)
+            else:
+                scaled = img_bgr
+
+            # 2. Encode to JPEG with modest compression (quality 75)
+            success, buffer = cv2.imencode(".jpg", scaled, [cv2.IMWRITE_JPEG_QUALITY, 75])
+            if not success or buffer is None:
+                logger.warning("Could not encode image buffer for Groq vision preflight.")
+                return None
+
+            b64_str = base64.b64encode(buffer.tobytes()).decode("utf-8")
+            data_url = f"data:image/jpeg;base64,{b64_str}"
+
+            # 3. Formulate structured semantic validation payload
+            system_prompt = (
+                "/no_thinking\n"
+                "You are a strict botanical preflight image validator for agricultural computer vision. "
+                "Output strictly raw JSON without any markdown code fences, thought process, or reasoning."
+            )
+
+            user_prompt = (
+                "Determine whether this uploaded image is an original photograph of a real plant or crop leaf "
+                "suitable for crop disease diagnosis. "
+                "Strict rules:\n"
+                "1. Reject screenshots, UI dashboards, websites, computer screens, documents, PDFs, presentations, "
+                "and digital graphic user interfaces. Even if a small plant thumbnail or leaf icon appears inside a UI "
+                "or browser window, classify the whole image as screenshot_document.\n"
+                "2. Reject non-plant photographs: human portraits, faces, animals, pets, vehicles, metallic objects, "
+                "machinery, buildings, furniture, and indoor rooms.\n"
+                "3. Only accept genuine, direct photographs of real agricultural crop leaves or plants.\n"
+                "Return JSON with exact keys: valid (boolean), category (string: plant_leaf, screenshot_document, "
+                "non_plant, or uncertain), plant_present (boolean), leaf_present (boolean), "
+                "suitable_for_crop_analysis (boolean), reason (string), inference_allowed (boolean)."
+            )
+
+            headers = {
+                "Authorization": f"Bearer {self.api_key.strip()}",
+                "Content-Type": "application/json"
+            }
+
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": user_prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}}
+                        ]
+                    }
+                ],
+                "max_tokens": 300,
+                "temperature": 0.0
+            }
+
+            resp = requests.post(
+                self.GROQ_ENDPOINT,
+                headers=headers,
+                json=payload,
+                timeout=self.timeout
+            )
+
+            latency_ms = (time.time() - start_time) * 1000.0
+
+            if resp.status_code != 200:
+                logger.warning(
+                    f"Groq vision returned HTTP {resp.status_code} ({resp.text[:150]}). "
+                    "Falling back to local computer vision validation."
+                )
+                return None
+
+            data = resp.json()
+            choices = data.get("choices", [])
+            if not choices:
+                return None
+
+            raw_text = choices[0].get("message", {}).get("content", "").strip()
+
+            # Clean markdown fences or think tags if present
+            cleaned_text = re.sub(r"^```(?:json)?", "", raw_text, flags=re.MULTILINE)
+            cleaned_text = re.sub(r"```$", "", cleaned_text, flags=re.MULTILINE).strip()
+            if "<think>" in cleaned_text and "</think>" in cleaned_text:
+                cleaned_text = cleaned_text.split("</think>")[-1].strip()
+
+            parsed = json.loads(cleaned_text)
+
+            cat = str(parsed.get("category", "uncertain")).lower().strip()
+            valid = bool(parsed.get("valid", False))
+            plant_pres = bool(parsed.get("plant_present", False))
+            leaf_pres = bool(parsed.get("leaf_present", False))
+            suitable = bool(parsed.get("suitable_for_crop_analysis", False))
+            allowed = bool(parsed.get("inference_allowed", False))
+            reason = str(parsed.get("reason", "Validation processed by Groq Vision."))
+
+            # Enforce conservative contract: only genuine plant leaves are permitted to enter inference
+            if cat in ("screenshot_document", "screenshot", "document", "ui", "dashboard"):
+                cat = "screenshot_document"
+                allowed = False
+                valid = False
+            elif cat in ("non_plant", "person", "animal", "vehicle", "object"):
+                cat = "non_plant"
+                allowed = False
+                valid = False
+            elif cat == "plant_leaf" and (not plant_pres or not leaf_pres or not suitable):
+                allowed = False
+                valid = False
+
+            return GroqValidationResult(
+                valid=valid,
+                category=cat,
+                plant_present=plant_pres,
+                leaf_present=leaf_pres,
+                suitable_for_crop_analysis=suitable,
+                reason=reason,
+                inference_allowed=allowed,
+                latency_ms=round(latency_ms, 2),
+                model_used=self.model,
+                raw_response=parsed
+            )
+
+        except json.JSONDecodeError as jde:
+            logger.warning(f"Groq vision response could not be parsed as JSON: {jde}. Falling back to local checks.")
+            return None
+        except requests.exceptions.Timeout:
+            logger.warning(f"Groq vision request timed out after {self.timeout}s. Falling back to local checks.")
+            return None
+        except Exception as exc:
+            logger.warning(f"Groq vision validation error: {exc}. Falling back to local checks.")
+            return None
+
+
+# Global singleton instance
+groq_vision_validator = GroqVisionValidator()
