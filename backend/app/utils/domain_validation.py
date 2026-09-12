@@ -59,7 +59,9 @@ class DomainValidationResult:
         leaf_presence: bool,
         image_quality: str,
         is_inference_allowed: bool,
-        telemetry: Dict[str, Any]
+        telemetry: Dict[str, Any],
+        screenshot_or_document_probability: float = 0.0,
+        inference_allowed: Optional[bool] = None,
     ):
         self.validation_status = validation_status
         self.validation_reason = validation_reason
@@ -68,7 +70,18 @@ class DomainValidationResult:
         self.leaf_presence = bool(leaf_presence)
         self.image_quality = image_quality
         self.is_inference_allowed = bool(is_inference_allowed)
+        self.inference_allowed = bool(is_inference_allowed if inference_allowed is None else inference_allowed)
+        self.screenshot_or_document_probability = round(float(screenshot_or_document_probability), 3)
         self.telemetry = telemetry
+        self.telemetry["validation_status"] = self.validation_status
+        self.telemetry["validation_reason"] = self.validation_reason
+        self.telemetry["validation_confidence"] = self.validation_confidence
+        self.telemetry["plant_presence"] = self.plant_presence
+        self.telemetry["leaf_presence"] = self.leaf_presence
+        self.telemetry["screenshot_or_document_probability"] = self.screenshot_or_document_probability
+        self.telemetry["image_quality"] = self.image_quality
+        self.telemetry["inference_allowed"] = self.inference_allowed
+        self.telemetry["is_inference_allowed"] = self.is_inference_allowed
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -77,8 +90,10 @@ class DomainValidationResult:
             "validation_confidence": self.validation_confidence,
             "plant_presence": self.plant_presence,
             "leaf_presence": self.leaf_presence,
+            "screenshot_or_document_probability": self.screenshot_or_document_probability,
             "image_quality": self.image_quality,
             "is_inference_allowed": self.is_inference_allowed,
+            "inference_allowed": self.inference_allowed,
             "telemetry": self.telemetry,
         }
 
@@ -210,6 +225,23 @@ def extract_botanical_signals(img_bgr: np.ndarray) -> Dict[str, Any]:
                 if float(area) / max(1, bw * bh) > 0.70:
                     ui_rectangles += 1
 
+    # Document page structure detection (scanned pages, PDF reader cards)
+    doc_pages_detected = 0
+    _, thresh_doc = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+    doc_contours, _ = cv2.findContours(thresh_doc, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    for c in doc_contours:
+        bx, by, bw, bh = cv2.boundingRect(c)
+        box_area = bw * bh
+        if (box_area > total_pixels * 0.05) and (box_area < total_pixels * 0.98):
+            cnt_area = cv2.contourArea(c)
+            if cnt_area / max(1, box_area) > 0.75:
+                region = gray[by:by+bh, bx:bx+bw]
+                white_ratio = float(np.mean(region > 200))
+                dark_text_ratio = float(np.mean(region < 120))
+                var = float(cv2.Laplacian(region, cv2.CV_64F).var())
+                if white_ratio > 0.60 and dark_text_ratio > 0.01 and var > 30.0:
+                    doc_pages_detected += 1
+
     # Flat color fill ratio in quantized space (identifies digital UI panels)
     q_thumb = (cv2.resize(img_bgr, (256, 256)) // 4) * 4
     pixels = q_thumb.reshape(-1, 3)
@@ -228,14 +260,36 @@ def extract_botanical_signals(img_bgr: np.ndarray) -> Dict[str, Any]:
 
     white_px_ratio = float(np.sum(gray > 230) / total_pixels)
 
+    # Compute continuous screenshot or document probability
+    screen_factors = []
+    if traffic_lights_detected:
+        screen_factors.append(0.98)
+    if doc_pages_detected >= 1:
+        screen_factors.append(0.98)
+    if is_document_like:
+        screen_factors.append(0.95)
+    if total_rectilinear_lines >= 20:
+        screen_factors.append(min(1.0, total_rectilinear_lines / 35.0))
+    if ui_rectangles >= 2 and total_rectilinear_lines >= 8:
+        screen_factors.append(min(1.0, ui_rectangles / 4.0))
+    if top10_flat_ratio >= 0.50 and total_rectilinear_lines >= 12:
+        screen_factors.append(min(1.0, (top10_flat_ratio - 0.40) / 0.40))
+    if white_px_ratio >= 0.25 and (is_document_like or total_rectilinear_lines >= 8):
+        screen_factors.append(min(1.0, white_px_ratio / 0.60))
+
+    if screen_factors:
+        screenshot_prob = float(np.clip(np.max(screen_factors) * 0.80 + np.mean(screen_factors) * 0.20, 0.0, 0.99))
+    else:
+        screenshot_prob = float(np.clip(total_rectilinear_lines / 100.0, 0.0, 0.25))
+
     is_screenshot_or_doc = bool(
         traffic_lights_detected
-        or (ui_rectangles >= CONFIGURABLE_THRESHOLDS["screenshot_min_ui_rectangles"] and total_rectilinear_lines >= 6)
-        or (top10_flat_ratio >= CONFIGURABLE_THRESHOLDS["screenshot_top10_flat_color_ratio"] and total_rectilinear_lines >= 8)
-        or (white_px_ratio > CONFIGURABLE_THRESHOLDS["screenshot_white_px_ratio"] and total_rectilinear_lines >= 4)
-        or (mean_bright > 195 and white_px_ratio > 0.40)
-        or (total_rectilinear_lines >= CONFIGURABLE_THRESHOLDS["screenshot_min_rectilinear_lines"] and top10_flat_ratio >= 0.45)
-        or is_document_like
+        or (doc_pages_detected >= 1)
+        or (is_document_like and not is_noise_like)
+        or (screenshot_prob >= 0.75 and total_rectilinear_lines >= 12)
+        or (ui_rectangles >= CONFIGURABLE_THRESHOLDS["screenshot_min_ui_rectangles"] and total_rectilinear_lines >= 12)
+        or (top10_flat_ratio >= CONFIGURABLE_THRESHOLDS["screenshot_top10_flat_color_ratio"] and total_rectilinear_lines >= 14)
+        or (white_px_ratio > CONFIGURABLE_THRESHOLDS["screenshot_white_px_ratio"] and (is_document_like or total_rectilinear_lines >= 8))
     )
 
     return {
@@ -249,6 +303,8 @@ def extract_botanical_signals(img_bgr: np.ndarray) -> Dict[str, Any]:
         "is_document_like": is_document_like,
         "is_noise_like": is_noise_like,
         "is_screenshot_or_document": is_screenshot_or_doc,
+        "screenshot_or_document_probability": round(screenshot_prob, 3),
+        "doc_pages_detected": doc_pages_detected,
         "total_rectilinear_lines": total_rectilinear_lines,
         "ui_rectangles": ui_rectangles,
         "top10_flat_ratio": round(top10_flat_ratio, 3),
@@ -321,69 +377,70 @@ def validate_plant_image(
     # PHASE A: DEFINITIVE REJECTION OF NON PLANT DOMAINS
     # ══════════════════════════════════════════════════════════════════════════
 
+    screen_prob = signals.get("screenshot_or_document_probability", 0.0)
+
     # A1. Blank or solid uniform canvas (white, black, or monochrome)
     if (bright > CONFIGURABLE_THRESHOLDS["max_brightness_mean"] and contrast < 12.0) or \
        (bright < 15.0 and contrast < 8.0) or \
        (contrast < 10.0 and foliar_ratio < 0.02):
         return DomainValidationResult(
             validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image appears blank or lacks discernible visual features."
-            ),
+            validation_reason="Invalid image. Please upload a clear photograph of a plant leaf for crop health analysis.",
             validation_confidence=0.96,
             plant_presence=False,
             leaf_presence=False,
             image_quality="Blank Surface",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
-    # A2. Digital Screenshot, Application UI, Dashboard, or Document
-    # Rejects screenshots of websites, applications, browser windows, UI layouts, documents,
-    # charts, and scans, even if a small thumbnail image is embedded inside the interface.
-    if is_screenshot_or_doc:
-        return DomainValidationResult(
-            validation_status="INVALID_SCREENSHOT_OR_DOCUMENT",
-            validation_reason="This appears to be a screenshot or document rather than a plant photograph. Please upload the original plant leaf image.",
-            validation_confidence=0.96,
-            plant_presence=False,
-            leaf_presence=False,
-            image_quality="Digital Screenshot / UI / Document",
-            is_inference_allowed=False,
-            telemetry=signals
-        )
-
-    # A3. Human photograph / portrait / selfie
+    # A2. Human photograph / portrait / selfie
     if skin_ratio > CONFIGURABLE_THRESHOLDS["max_skin_chrominance_ratio"] and (foliar_ratio < 0.12 or green_ratio < 0.10):
         return DomainValidationResult(
             validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image appears to contain a person or skin surface rather than crop foliage."
-            ),
+            validation_reason="Invalid image. A person or skin surface was detected. Please upload a clear image of a plant leaf for crop health analysis.",
             validation_confidence=0.92,
             plant_presence=False,
             leaf_presence=False,
             image_quality="Human Subject / Non Agricultural",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
-    # A4. Synthetic random noise or corrupted pattern
+    # A3. Synthetic random noise or corrupted pattern
     if is_noise:
         return DomainValidationResult(
             validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image exhibits high frequency noise or visual corruption."
-            ),
+            validation_reason="Invalid image. Please upload a clear photograph of a plant leaf for crop health analysis.",
             validation_confidence=0.95,
             plant_presence=False,
             leaf_presence=False,
             image_quality="Corrupted Pattern",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
+        )
+
+    # A4. Digital Screenshot, Application UI, Dashboard, or Document
+    # Rejects screenshots of websites, applications, browser windows, UI layouts, documents,
+    # charts, and scans, even if a small thumbnail image is embedded inside the interface.
+    if is_screenshot_or_doc:
+        return DomainValidationResult(
+            validation_status="INVALID_SCREENSHOT_OR_DOCUMENT",
+            validation_reason="Invalid image. This appears to be a screenshot or document rather than a plant photograph. Please upload the original photograph of the plant leaf.",
+            validation_confidence=0.96,
+            plant_presence=False,
+            leaf_presence=False,
+            image_quality="Digital Screenshot / UI / Document",
+            is_inference_allowed=False,
+            telemetry=signals,
+            screenshot_or_document_probability=max(0.85, screen_prob),
+            inference_allowed=False
         )
 
     # A5. General non plant objects (vehicles, buildings, domestic animals, furniture, tools)
@@ -391,16 +448,15 @@ def validate_plant_image(
     if foliar_ratio < 0.04 and not has_detector_confirmation:
         return DomainValidationResult(
             validation_status="INVALID_NON_PLANT_IMAGE",
-            validation_reason=(
-                "Please upload a clear image of a plant leaf or crop leaf for analysis. "
-                "The uploaded image does not appear suitable for crop health analysis."
-            ),
+            validation_reason="Invalid image. Please upload a clear image of a plant leaf for crop health analysis.",
             validation_confidence=0.88,
             plant_presence=False,
             leaf_presence=False,
             image_quality="Non Botanical Scene",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -410,66 +466,62 @@ def validate_plant_image(
     # B1. Severe underexposure (too dark to identify foliar lesions)
     if bright < CONFIGURABLE_THRESHOLDS["min_brightness_mean"]:
         return DomainValidationResult(
-            validation_status="LOW_QUALITY_OR_UNCERTAIN_IMAGE",
-            validation_reason=(
-                "The image may contain a plant leaf, but the photograph is critically underexposed (too dark). "
-                "Please capture the specimen under brighter, indirect daylight or diffuse lighting."
-            ),
+            validation_status="LOW_QUALITY_IMAGE",
+            validation_reason="Image quality is insufficient for crop diagnosis. Please upload a clear, focused photograph under good lighting.",
             validation_confidence=0.75,
             plant_presence=foliar_ratio > 0.05,
             leaf_presence=False,
             image_quality="Critically Underexposed",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
     # B2. Severe overexposure (washed out specular glare)
     if bright > CONFIGURABLE_THRESHOLDS["max_brightness_mean"]:
         return DomainValidationResult(
-            validation_status="LOW_QUALITY_OR_UNCERTAIN_IMAGE",
-            validation_reason=(
-                "The image may contain a plant leaf, but severe overexposure or glare obscures foliar detail. "
-                "Please shield the leaf from direct harsh glare and retake the photograph."
-            ),
+            validation_status="LOW_QUALITY_IMAGE",
+            validation_reason="Image quality is insufficient for crop diagnosis. Please upload a clear, focused photograph under good lighting.",
             validation_confidence=0.72,
             plant_presence=foliar_ratio > 0.05,
             leaf_presence=False,
             image_quality="Critically Overexposed",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
     # B3. Severe motion or focal blur
     if blur < CONFIGURABLE_THRESHOLDS["min_blur_laplacian_variance"]:
         return DomainValidationResult(
-            validation_status="LOW_QUALITY_OR_UNCERTAIN_IMAGE",
-            validation_reason=(
-                "The image may contain a plant leaf, but severe motion or focal blur prevents reliable pathology analysis. "
-                "Please steady the camera and ensure the leaf surface is sharply focused."
-            ),
+            validation_status="LOW_QUALITY_IMAGE",
+            validation_reason="Image quality is insufficient for crop diagnosis. Please upload a clear, focused photograph under good lighting.",
             validation_confidence=0.78,
             plant_presence=foliar_ratio > 0.05,
             leaf_presence=has_detector_confirmation or (blob_ratio > 0.05),
             image_quality="Severely Blurred",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
     # B4. Insufficient foliar coverage without detector leaf support
     # (e.g. wide landscape or distant outdoor shot with tiny speck of green)
     if foliar_ratio < CONFIGURABLE_THRESHOLDS["min_foliar_ratio_baseline"] and not has_detector_confirmation:
         return DomainValidationResult(
-            validation_status="LOW_QUALITY_OR_UNCERTAIN_IMAGE",
-            validation_reason=(
-                "The image may contain distant foliage, but canopy coverage is too sparse for diagnostic analysis. "
-                "Please move closer so the individual leaf fills at least 40% of the frame."
-            ),
+            validation_status="VALIDATION_UNCERTAIN",
+            validation_reason="Plant presence could not be confirmed with certainty. Please upload a closer, clearer photograph of the plant leaf.",
             validation_confidence=0.68,
             plant_presence=True,
             leaf_presence=False,
             image_quality="Sparse Foliar Coverage",
             is_inference_allowed=False,
-            telemetry=signals
+            telemetry=signals,
+            screenshot_or_document_probability=screen_prob,
+            inference_allowed=False
         )
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -496,5 +548,7 @@ def validate_plant_image(
         leaf_presence=True,
         image_quality="Good / Diagnostic Ready",
         is_inference_allowed=True,
-        telemetry=signals
+        telemetry=signals,
+        screenshot_or_document_probability=screen_prob,
+        inference_allowed=True
     )

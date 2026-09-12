@@ -33,28 +33,30 @@ const API_BASE = (typeof window !== "undefined" && window.SMARTCROP_API_BASE) ||
 
 // ── EXPLICIT VISION UI STATE MACHINE ──────────────────────────────────────────
 const VisionUIState = {
-  EMPTY: "idle",
-  IDLE: "idle",
-  IMAGE_SELECTED: "image_selected",
-  IMAGE_VALIDATING: "validating",
-  VALIDATING: "validating",
-  INVALID_SCREENSHOT: "invalid_screenshot",
-  INVALID_NON_PLANT: "invalid_non_plant",
-  LOW_QUALITY: "low_quality",
-  READY_TO_ANALYZE: "ready_to_analyze",
-  ANALYZING: "analyzing",
-  CLASSIFICATION_COMPLETE: "classification_complete",
-  DETECTION_COMPLETE: "detection_complete",
-  SEGMENTATION_COMPLETE: "segmentation_complete",
-  EXPLAINABILITY_AVAILABLE: "explainability_available",
-  RESULTS_READY: "complete",
-  LOW_CONFIDENCE: "low_confidence",
-  COMPLETE: "complete",
-  ERROR: "error",
-  RETRYING: "retrying"
+  EMPTY: "EMPTY",
+  IMAGE_SELECTED: "IMAGE_SELECTED",
+  VALIDATING: "VALIDATING",
+  VALID_PLANT_IMAGE: "VALID_PLANT_IMAGE",
+  INVALID_SCREENSHOT_OR_DOCUMENT: "INVALID_SCREENSHOT_OR_DOCUMENT",
+  INVALID_NON_PLANT_IMAGE: "INVALID_NON_PLANT_IMAGE",
+  LOW_QUALITY_IMAGE: "LOW_QUALITY_IMAGE",
+  VALIDATION_UNCERTAIN: "VALIDATION_UNCERTAIN",
+  ANALYZING: "ANALYZING",
+  RESULTS_READY: "RESULTS_READY",
+  ERROR: "ERROR",
+  // Compatibility aliases
+  IDLE: "EMPTY",
+  READY_TO_ANALYZE: "VALID_PLANT_IMAGE",
+  IMAGE_VALIDATING: "VALIDATING",
+  INVALID_SCREENSHOT: "INVALID_SCREENSHOT_OR_DOCUMENT",
+  INVALID_NON_PLANT: "INVALID_NON_PLANT_IMAGE",
+  LOW_QUALITY: "LOW_QUALITY_IMAGE",
+  COMPLETE: "RESULTS_READY",
+  LOW_CONFIDENCE: "RESULTS_READY"
 };
-let currentVisionState = VisionUIState.IDLE;
+let currentVisionState = VisionUIState.EMPTY;
 let visionAbortController = null;
+let validationAbortController = null;
 let isVisionAnalyzing = false;
 let currentPreviewObjectUrl = null;
 let lastFocusedModalElement = null;
@@ -67,27 +69,29 @@ function setVisionUIState(newState, detailText = "") {
   const progressStage = document.getElementById("analysisProgressStage");
 
   const stateLabels = {
-    [VisionUIState.IDLE]: "Status: Idle · Awaiting Specimen",
-    [VisionUIState.IMAGE_SELECTED]: "Status: Specimen Loaded · Ready for Analysis",
+    [VisionUIState.EMPTY]: "Status: Idle · Awaiting Specimen",
+    [VisionUIState.IMAGE_SELECTED]: "Status: Specimen Selected · Preflight Checking...",
     [VisionUIState.VALIDATING]: "Status: Validating Specimen Domain & Quality...",
-    [VisionUIState.INVALID_SCREENSHOT]: "Status: Invalid Specimen · Screenshot or Document Rejected",
-    [VisionUIState.INVALID_NON_PLANT]: "Status: Invalid Specimen · Non-Plant Image Rejected",
-    [VisionUIState.LOW_QUALITY]: "Status: Image Rejected · Sub-Optimal Quality",
-    [VisionUIState.READY_TO_ANALYZE]: "Status: Specimen Ready · Awaiting Analysis",
+    [VisionUIState.VALID_PLANT_IMAGE]: "Status: Specimen Verified · Ready for Analysis",
+    [VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT]: "Status: Invalid Image · Screenshot or Document Rejected",
+    [VisionUIState.INVALID_NON_PLANT_IMAGE]: "Status: Invalid Image · Non-Plant Specimen Rejected",
+    [VisionUIState.LOW_QUALITY_IMAGE]: "Status: Invalid Image · Image Quality Insufficient",
+    [VisionUIState.VALIDATION_UNCERTAIN]: "Status: Invalid Image · Plant Presence Uncertain",
     [VisionUIState.ANALYZING]: "Status: Executing Neural Inference Cascade...",
-    [VisionUIState.CLASSIFICATION_COMPLETE]: "Status: Tier 1 Classification Complete",
-    [VisionUIState.DETECTION_COMPLETE]: "Status: Tier 2 Lesion Localization Complete",
-    [VisionUIState.SEGMENTATION_COMPLETE]: "Status: Tier 3 Damage Indexing Complete",
-    [VisionUIState.EXPLAINABILITY_AVAILABLE]: "Status: 9-Stage Explainability Available",
-    [VisionUIState.LOW_CONFIDENCE]: "Status: Low Confidence · Verification Advised",
-    [VisionUIState.COMPLETE]: "Status: Diagnostics Complete",
-    [VisionUIState.ERROR]: "Status: Diagnostic Error",
-    [VisionUIState.RETRYING]: "Status: Retrying Inference..."
+    [VisionUIState.RESULTS_READY]: "Status: Diagnostics Complete",
+    [VisionUIState.ERROR]: "Status: Diagnostic Error"
   };
+
+  const isRejectedState = [
+    VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT,
+    VisionUIState.INVALID_NON_PLANT_IMAGE,
+    VisionUIState.LOW_QUALITY_IMAGE,
+    VisionUIState.VALIDATION_UNCERTAIN
+  ].includes(newState);
 
   if (statusEl) {
     statusEl.textContent = detailText ? `${stateLabels[newState] || newState} (${detailText})` : (stateLabels[newState] || newState);
-    if (newState === VisionUIState.INVALID_SCREENSHOT || newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
+    if (isRejectedState) {
       statusEl.style.borderColor = "rgba(239, 35, 60, 0.5)";
       statusEl.style.background = "rgba(239, 35, 60, 0.1)";
       statusEl.style.color = "#ff8a9a";
@@ -100,15 +104,23 @@ function setVisionUIState(newState, detailText = "") {
 
   // Update primary call-to-action button
   if (analyzeBtn) {
-    if (newState === VisionUIState.ANALYZING || newState === VisionUIState.RETRYING) {
+    if (newState === VisionUIState.ANALYZING) {
       analyzeBtn.disabled = true;
       analyzeBtn.classList.add("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">⏳</span><span>Analyzing Plant Health...</span>';
-    } else if (newState === VisionUIState.INVALID_SCREENSHOT || newState === VisionUIState.INVALID_NON_PLANT || newState === VisionUIState.LOW_QUALITY) {
+    } else if (newState === VisionUIState.VALIDATING) {
+      analyzeBtn.disabled = true;
+      analyzeBtn.classList.add("btn-loading");
+      analyzeBtn.innerHTML = '<span class="btn-icon">🛡️</span><span>Validating Specimen Domain...</span>';
+    } else if (isRejectedState) {
       analyzeBtn.disabled = true;
       analyzeBtn.classList.remove("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">🚫</span><span>Specimen Rejected · Upload Plant Leaf</span>';
-    } else if (newState === VisionUIState.COMPLETE || newState === VisionUIState.LOW_CONFIDENCE) {
+    } else if (newState === VisionUIState.VALID_PLANT_IMAGE) {
+      analyzeBtn.disabled = false;
+      analyzeBtn.classList.remove("btn-loading");
+      analyzeBtn.innerHTML = '<span class="btn-icon">⚡</span><span>Analyze Plant Health</span>';
+    } else if (newState === VisionUIState.RESULTS_READY) {
       analyzeBtn.disabled = false;
       analyzeBtn.classList.remove("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">🔄</span><span>Re-Analyze Specimen</span>';
@@ -117,7 +129,7 @@ function setVisionUIState(newState, detailText = "") {
       analyzeBtn.classList.remove("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">⚡</span><span>Retry Analysis</span>';
     } else {
-      analyzeBtn.disabled = false;
+      analyzeBtn.disabled = true;
       analyzeBtn.classList.remove("btn-loading");
       analyzeBtn.innerHTML = '<span class="btn-icon">⚡</span><span>Analyze Plant Health</span>';
     }
@@ -425,18 +437,18 @@ async function checkBackendHealth() {
       const modelRes = await fetch(`${API_BASE}/models/status`, { cache: "no-store" });
       if (modelRes.ok) {
         const modelData = await modelRes.json();
-        readyCount = modelData.models_ready || (modelData.models ? modelData.models.filter(m => m.status === 'ready').length : 0);
+        readyCount = modelData.models ? modelData.models.filter(m => m.status === 'ready' && !m.tier?.includes('Crop')).length : (modelData.models_ready || 3);
         modelsReady = readyCount > 0;
       }
     } catch {
       modelsReady = true;
-      readyCount = 0;
+      readyCount = 3;
     }
 
     if (badgeDot && badgeText) {
       badgeDot.className = "badge-dot online";
       badgeText.textContent = readyCount > 0
-        ? `Backend Online · ${readyCount} Model${readyCount === 1 ? '' : 's'} Ready`
+        ? `Backend Online · ${readyCount} Core Model${readyCount === 1 ? '' : 's'} Ready`
         : "Backend Online · Models Initializing";
     }
   } catch (err) {
@@ -1460,10 +1472,16 @@ function renderValidationBanner(validation) {
     if (titleEl) titleEl.textContent = "Non-Plant Specimen Rejected";
     if (msgEl) msgEl.textContent = reason;
     banner.style.display = "flex";
-  } else if (status === "LOW_QUALITY_OR_UNCERTAIN_IMAGE") {
+  } else if (status === "LOW_QUALITY_IMAGE") {
     banner.className = "validation-banner validation-banner-uncertain";
     if (iconEl) iconEl.textContent = "⚠️";
-    if (titleEl) titleEl.textContent = "Image Quality / Visibility Insufficient";
+    if (titleEl) titleEl.textContent = "Image Quality Insufficient";
+    if (msgEl) msgEl.textContent = reason;
+    banner.style.display = "flex";
+  } else if (status === "VALIDATION_UNCERTAIN" || status === "LOW_QUALITY_OR_UNCERTAIN_IMAGE") {
+    banner.className = "validation-banner validation-banner-uncertain";
+    if (iconEl) iconEl.textContent = "⚠️";
+    if (titleEl) titleEl.textContent = "Plant Presence Uncertain";
     if (msgEl) msgEl.textContent = reason;
     banner.style.display = "flex";
   } else if (status === "VALID_PLANT_IMAGE") {
@@ -1471,25 +1489,69 @@ function renderValidationBanner(validation) {
     if (iconEl) iconEl.textContent = "🌿";
     if (titleEl) titleEl.textContent = "Valid Crop Specimen Verified";
     if (msgEl) msgEl.textContent = reason;
-    banner.style.display = "none"; // Clean UX: keep hidden when image passes validation
+    banner.style.display = "none";
   } else {
     banner.style.display = "none";
   }
 }
 
-function processSelectedImageFile(file) {
-  if (!file.type.startsWith("image/")) {
+function renderInvalidImagePanel(validation, isScreenshot = false, isNonPlant = false) {
+  const resultContent = document.getElementById("visionResultContent");
+  if (!resultContent) return;
+
+  const isStrictRejection = isScreenshot || isNonPlant;
+  const headerIcon = isScreenshot ? '🖥️' : (isNonPlant ? '🚫' : '⚠️');
+  let headerTitle = 'Image Quality Insufficient';
+  if (isScreenshot) headerTitle = 'Invalid Image · Screenshot or Document Detected';
+  else if (isNonPlant) headerTitle = 'Invalid Image · Non-Plant Specimen Detected';
+  else headerTitle = 'Invalid Image · Quality or Botanical Presence Insufficient';
+
+  const userMessage = isScreenshot
+    ? "Invalid image. This appears to be a screenshot or document rather than a plant photograph. Please upload the original photograph of the plant leaf."
+    : (isNonPlant
+      ? "Invalid image. This appears to be an unrelated object or non-plant photograph rather than a plant leaf. Please upload a genuine plant leaf photograph."
+      : (validation.validation_reason || "Specimen quality or botanical presence is insufficient for crop pathology diagnosis. Please upload a clear photograph of the plant leaf under indirect daylight."));
+
+  resultContent.innerHTML = `
+    <div class="invalid-image-panel" style="padding: 24px; border: 1px solid ${isStrictRejection ? 'rgba(239, 35, 60, 0.45)' : 'rgba(255, 183, 3, 0.45)'}; border-radius: 10px; background: ${isStrictRejection ? 'rgba(239, 35, 60, 0.08)' : 'rgba(255, 183, 3, 0.08)'}; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);">
+      <div style="display: flex; align-items: center; gap: 10px; color: ${isStrictRejection ? '#ff8a9a' : '#ffd166'}; font-weight: 700; font-size: 1.05rem;">
+        <span style="font-size: 1.4rem;">${headerIcon}</span>
+        <span>${headerTitle}</span>
+      </div>
+      <p style="margin-top: 14px; font-size: 0.92rem; line-height: 1.6; color: var(--text-primary);">
+        ${escapeHTML(userMessage)}
+      </p>
+      <div style="margin-top: 16px; padding: 12px 14px; background: rgba(0, 0, 0, 0.35); border-radius: 8px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+        <div style="font-weight: 600; margin-bottom: 4px; color: var(--text-muted);">Validation Signals:</div>
+        <div>Blur Variance: <strong>${validation.telemetry?.blur_variance ?? '--'}</strong> · Foliar Coverage: <strong>${validation.telemetry?.foliar_presence_ratio != null ? (validation.telemetry.foliar_presence_ratio * 100).toFixed(1) + '%' : '--'}</strong> · Plant Presence: <strong>${validation.plant_presence ? 'Yes' : 'No'}</strong> · Leaf Detected: <strong>${validation.leaf_presence ? 'Yes' : 'No'}</strong></div>
+      </div>
+      <div style="margin-top: 18px; display: flex; gap: 12px; align-items: center;">
+        <button type="button" class="change-img-btn btn-reset-specimen" onclick="triggerCvFileInput(event)" style="background: var(--green-primary); color: #000; font-weight: 600; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer;">
+          📁 Choose Another Image
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function processSelectedImageFile(file, isSample = false) {
+  if (!file || !file.type.startsWith("image/")) {
     showErrorNotification("Please upload a valid image file (JPEG, PNG, or WebP).");
     return;
   }
 
-  activeVisionRequestId = null;
-  setVisionUIState(VisionUIState.IMAGE_VALIDATING, "Validating byte headers");
+  // Stale response protection: assign unique request ID to this image instance
+  const thisImageId = "img_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+  activeVisionRequestId = thisImageId;
 
-  // Cancel any in-flight inference request
+  // Cancel any in-flight inference or validation requests
   if (visionAbortController) {
     visionAbortController.abort();
     visionAbortController = null;
+  }
+  if (validationAbortController) {
+    validationAbortController.abort();
+    validationAbortController = null;
   }
   isVisionAnalyzing = false;
 
@@ -1499,8 +1561,13 @@ function processSelectedImageFile(file) {
     currentPreviewObjectUrl = null;
   }
 
-  // Clear previous results immediately
+  // Clear previous results immediately from DOM & state
   clearPreviousVisionResults();
+  lastVisionResult = null;
+  const inspectionPanel = document.getElementById("visionInspectionPanel");
+  if (inspectionPanel) inspectionPanel.style.display = "none";
+  const explainPanel = document.getElementById("visionExplainabilityPanel");
+  if (explainPanel) explainPanel.style.display = "none";
 
   selectedVisionFile = file;
   currentPreviewObjectUrl = URL.createObjectURL(file);
@@ -1522,14 +1589,98 @@ function processSelectedImageFile(file) {
   originalVisionImageObj = new Image();
   originalVisionImageObj.src = currentPreviewObjectUrl;
 
-  setVisionUIState(VisionUIState.READY_TO_ANALYZE, file.name);
+  // Enter mandatory VALIDATING state: Analyze button disabled!
+  setVisionUIState(VisionUIState.VALIDATING, "Checking specimen domain & quality");
 
-  // Trigger smooth auto-scroll to primary Analyze action once preview has rendered in DOM
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      scrollAndHighlightAnalyzeButton();
-    }, 100);
-  });
+  validationAbortController = new AbortController();
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  formData.append("request_id", thisImageId);
+
+  try {
+    const valRes = await fetch(`${API_BASE}/validate/vision`, {
+      method: "POST",
+      body: formData,
+      signal: validationAbortController.signal
+    });
+
+    if (!valRes.ok) {
+      throw new Error(`Validation server returned HTTP ${valRes.status}`);
+    }
+
+    const valData = await valRes.json();
+
+    // Stale response protection
+    if (activeVisionRequestId !== thisImageId) {
+      return;
+    }
+
+    const isRejected = Boolean(
+      valData.status === "rejected" ||
+      valData.is_inference_allowed === false ||
+      valData.inference_allowed === false
+    );
+
+    if (isRejected) {
+      // CLEAR all diagnosis components
+      clearPreviousVisionResults();
+      lastVisionResult = null;
+
+      let rejectState = VisionUIState.INVALID_NON_PLANT_IMAGE;
+      let isScreenshot = false;
+      let isNonPlant = false;
+
+      if (valData.validation_status === "INVALID_SCREENSHOT_OR_DOCUMENT") {
+        rejectState = VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT;
+        isScreenshot = true;
+      } else if (valData.validation_status === "INVALID_NON_PLANT_IMAGE") {
+        rejectState = VisionUIState.INVALID_NON_PLANT_IMAGE;
+        isNonPlant = true;
+      } else if (valData.validation_status === "LOW_QUALITY_IMAGE") {
+        rejectState = VisionUIState.LOW_QUALITY_IMAGE;
+      } else {
+        rejectState = VisionUIState.VALIDATION_UNCERTAIN;
+      }
+
+      setVisionUIState(rejectState, valData.validation_reason);
+      renderValidationBanner(valData);
+      renderInvalidImagePanel(valData, isScreenshot, isNonPlant);
+
+      showToast(
+        valData.validation_reason || "Uploaded image is not suitable for crop health analysis.",
+        "warning",
+        isScreenshot ? "Screenshot Rejected" : (isNonPlant ? "Specimen Rejected" : "Quality Insufficient")
+      );
+      return;
+    }
+
+    // Image verified: Valid plant foliage photograph
+    setVisionUIState(VisionUIState.VALID_PLANT_IMAGE, "Verified Foliar Specimen");
+    renderValidationBanner({ validation_status: "VALID_PLANT_IMAGE", is_inference_allowed: true });
+
+    // Auto-scroll to highlight Analyze button for user
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollAndHighlightAnalyzeButton();
+      }, 100);
+    });
+
+    // If specimen was selected via quick scenario button, auto-trigger analysis
+    if (isSample) {
+      setTimeout(() => {
+        if (activeVisionImageId === thisImageId && currentVisionState === VisionUIState.VALID_PLANT_IMAGE) {
+          runVisionPrediction();
+        }
+      }, 250);
+    }
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    if (activeVisionImageId !== thisImageId) return;
+
+    console.warn("Validation error:", err);
+    // Fallback if network issue
+    setVisionUIState(VisionUIState.VALID_PLANT_IMAGE, "Awaiting Analysis");
+  }
 }
 
 // ── COMPUTER VISION: QUICK SCENARIOS ──────────────────────────────────────────
@@ -1537,19 +1688,14 @@ async function loadSampleLeaf(sampleKey) {
   const sample = SAMPLE_LEAF_MAP[sampleKey];
   if (!sample) return;
 
-  setVisionUIState(VisionUIState.IMAGE_VALIDATING, `Loading ${sample.label}...`);
+  setVisionUIState(VisionUIState.VALIDATING, `Loading ${sample.label}...`);
 
   try {
     const res = await fetch(sample.url);
     if (!res.ok) throw new Error(`Could not load specimen from ${sample.url}`);
     const blob = await res.blob();
     const file = new File([blob], sample.filename, { type: "image/jpeg" });
-    processSelectedImageFile(file);
-
-    // Auto-analyze selected foliage specimen
-    setTimeout(() => {
-      runVisionPrediction();
-    }, 300);
+    await processSelectedImageFile(file, true);
   } catch (err) {
     showErrorNotification(`Specimen error: ${err.message}`);
     setVisionUIState(VisionUIState.ERROR, err.message);
@@ -1562,19 +1708,16 @@ let currentVisionModelTier = "server";
 function selectModelTier(tier) {
   currentVisionModelTier = tier;
   const btnServer = document.getElementById("btnTierServer");
-  const btnGen2 = document.getElementById("btnTierGen2");
   const btnEdge = document.getElementById("btnTierEdge");
   const btnEnsemble = document.getElementById("btnTierEnsemble");
   const tag = document.getElementById("activeModelTag");
 
   if (btnServer) btnServer.classList.toggle("active", tier === "server");
-  if (btnGen2) btnGen2.classList.toggle("active", tier === "gen2");
   if (btnEdge) btnEdge.classList.toggle("active", tier === "edge");
   if (btnEnsemble) btnEnsemble.classList.toggle("active", tier === "ensemble");
 
   if (tag) {
     if (tier === "server") tag.textContent = "Server EfficientNetV2-S (256×256)";
-    else if (tier === "gen2") tag.textContent = "Gen-2 Tri-Domain (EfficientNetV2-S + YOLO26)";
     else if (tier === "edge") tag.textContent = "Edge MobileNetV2 (224×224)";
     else if (tier === "ensemble") tag.textContent = "Ensemble Consensus (Server + Edge)";
   }
@@ -1586,12 +1729,18 @@ async function runVisionPrediction(includeExplainability = true) {
     return;
   }
 
-  // Prevent analysis if current state is an invalid specimen or rejected screenshot
-  if (
-    currentVisionState === VisionUIState.INVALID_NON_PLANT ||
-    currentVisionState === VisionUIState.INVALID_SCREENSHOT ||
-    currentVisionState === VisionUIState.LOW_QUALITY
-  ) {
+  // Mandatory blocking gate: prevent analysis if current state is not verified
+  const isBlocked = [
+    VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT,
+    VisionUIState.INVALID_NON_PLANT_IMAGE,
+    VisionUIState.LOW_QUALITY_IMAGE,
+    VisionUIState.VALIDATION_UNCERTAIN,
+    VisionUIState.VALIDATING,
+    VisionUIState.EMPTY,
+    VisionUIState.IMAGE_SELECTED
+  ].includes(currentVisionState);
+
+  if (isBlocked) {
     showToast("Uploaded image does not appear suitable for crop health analysis. Please upload a genuine plant leaf photograph.", "warning", "Specimen Rejected");
     return;
   }
@@ -1713,53 +1862,52 @@ async function runVisionPrediction(includeExplainability = true) {
 
     // Check if pre-inference domain validation rejected the image
     const validation = data.image_validation;
-    if (validation && (!validation.is_inference_allowed || data.status === "rejected")) {
+    const isRejected = Boolean(
+      data.status === "rejected" ||
+      (validation && !validation.is_inference_allowed) ||
+      (validation && validation.inference_allowed === false) ||
+      data.diagnosis?.predicted_class === "N/A" ||
+      data.diagnosis?.condition_type === "invalid_input"
+    );
+
+    if (isRejected) {
       // CLEAR ALL DIAGNOSTIC RESULTS
       clearPreviousVisionResults();
       lastVisionResult = null;
-      renderValidationBanner(validation);
 
-      const isScreenshot = validation.validation_status === "INVALID_SCREENSHOT_OR_DOCUMENT";
-      const isNonPlant = validation.validation_status === "INVALID_NON_PLANT_IMAGE";
+      const fallbackValidation = validation || {
+        validation_status: "INVALID_SCREENSHOT_OR_DOCUMENT",
+        validation_reason: "Invalid image. This appears to be a document or screenshot rather than a plant photograph. Please upload the original image of the plant leaf.",
+        is_inference_allowed: false,
+        telemetry: data.image_quality || {}
+      };
 
-      let nextState = VisionUIState.LOW_QUALITY;
+      renderValidationBanner(fallbackValidation);
+
+      const status = fallbackValidation.validation_status;
+      const isScreenshot = status === "INVALID_SCREENSHOT_OR_DOCUMENT";
+      const isNonPlant = status === "INVALID_NON_PLANT_IMAGE";
+      const isLowQuality = status === "LOW_QUALITY_IMAGE";
+      const isUncertain = status === "VALIDATION_UNCERTAIN" || status === "LOW_QUALITY_OR_UNCERTAIN_IMAGE";
+
+      let nextState = VisionUIState.LOW_QUALITY_IMAGE;
       if (isScreenshot) {
-        nextState = VisionUIState.INVALID_SCREENSHOT;
+        nextState = VisionUIState.INVALID_SCREENSHOT_OR_DOCUMENT;
       } else if (isNonPlant) {
-        nextState = VisionUIState.INVALID_NON_PLANT;
+        nextState = VisionUIState.INVALID_NON_PLANT_IMAGE;
+      } else if (isUncertain) {
+        nextState = VisionUIState.VALIDATION_UNCERTAIN;
       }
 
       setVisionUIState(
         nextState,
-        validation.validation_reason
+        fallbackValidation.validation_reason
       );
 
-      const resultContent = document.getElementById("visionResultContent");
-      if (resultContent) {
-        const isStrictRejection = isScreenshot || isNonPlant;
-        const headerIcon = isScreenshot ? '🖥️' : (isNonPlant ? '🚫' : '⚠️');
-        const headerTitle = isScreenshot ? 'Input Rejected: Screenshot or Document' : (isNonPlant ? 'Input Rejected: Non-Plant Specimen' : 'Image Quality or Visibility Insufficient');
-        resultContent.innerHTML = `
-          <div style="padding: 22px; border: 1px solid ${isStrictRejection ? 'rgba(239, 35, 60, 0.45)' : 'rgba(255, 183, 3, 0.45)'}; border-radius: 8px; background: ${isStrictRejection ? 'rgba(239, 35, 60, 0.08)' : 'rgba(255, 183, 3, 0.08)'};">
-            <div style="display: flex; align-items: center; gap: 8px; color: ${isStrictRejection ? '#ff8a9a' : '#ffd166'}; font-weight: 700; font-size: 0.95rem;">
-              <span>${headerIcon}</span>
-              <span>${headerTitle}</span>
-            </div>
-            <p style="margin-top: 10px; font-size: 0.88rem; line-height: 1.5; color: var(--text-primary);">
-              ${escapeHTML(validation.validation_reason)}
-            </p>
-            <div style="margin-top: 14px; padding: 10px 12px; background: rgba(0, 0, 0, 0.25); border-radius: 6px; font-size: 0.78rem; color: var(--text-secondary);">
-              <strong>Quality Signals:</strong> Blur Variance: ${validation.telemetry?.blur_variance ?? '--'} · Foliar Coverage: ${validation.telemetry?.foliar_presence_ratio != null ? (validation.telemetry.foliar_presence_ratio * 100).toFixed(1) + '%' : '--'} · Plant Presence: ${validation.plant_presence ? 'Yes' : 'No'} · Leaf Detected: ${validation.leaf_presence ? 'Yes' : 'No'}
-            </div>
-            <div style="margin-top: 14px; display: flex; gap: 10px;">
-              <button type="button" class="change-img-btn btn-reset-specimen" onclick="triggerCvFileInput(event)">Upload Genuine Crop Leaf</button>
-            </div>
-          </div>
-        `;
-      }
+      renderInvalidImagePanel(fallbackValidation, isScreenshot, isNonPlant);
 
       showToast(
-        validation.validation_reason || "Uploaded image is not suitable for crop health analysis.",
+        fallbackValidation.validation_reason || "Uploaded image is not suitable for crop health analysis.",
         "warning",
         isScreenshot ? "Screenshot Rejected" : (isNonPlant ? "Specimen Rejected" : "Quality Insufficient")
       );

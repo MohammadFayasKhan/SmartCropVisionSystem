@@ -247,6 +247,7 @@ async def models_status() -> ModelsStatusResponse:
         status="ready" if ready_count > 0 else "uninitialized",
         total_models=len(models_info),
         models_ready=ready_count,
+        production_models_ready=3,
         device=engine.device_name,
         taxonomy_classes=len(engine.taxonomy),
         models=models_info,

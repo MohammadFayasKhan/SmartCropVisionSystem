@@ -113,13 +113,15 @@ class LatencyBenchmark(BaseModel):
     compute_device: str = Field(..., description="Underlying acceleration hardware (MPS / CUDA GPU name / CPU)")
 
 class ImageValidationAssessment(BaseModel):
-    validation_status: str = Field(..., description="VALID_PLANT_IMAGE, INVALID_NON_PLANT_IMAGE, or LOW_QUALITY_OR_UNCERTAIN_IMAGE")
-    validation_reason: str = Field(..., description="User-facing plain-language validation verdict or guidance")
+    validation_status: str = Field(..., description="Validation state: VALID_PLANT_IMAGE, INVALID_SCREENSHOT_OR_DOCUMENT, INVALID_NON_PLANT_IMAGE, LOW_QUALITY_IMAGE, or VALIDATION_UNCERTAIN")
+    validation_reason: str = Field(..., description="User facing plain language validation verdict or guidance")
     validation_confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in domain validation assessment")
     plant_presence: bool = Field(..., description="True if botanical plant foliage or tissue was detected")
-    leaf_presence: bool = Field(..., description="True if genuine leaf/canopy structure is present")
+    leaf_presence: bool = Field(..., description="True if genuine leaf or canopy structure is present")
+    screenshot_or_document_probability: float = Field(default=0.0, ge=0.0, le=1.0, description="Estimated probability that input is a screenshot or document")
     image_quality: str = Field(..., description="Qualitative quality summary")
     is_inference_allowed: bool = Field(..., description="True only if image passed domain validation and inference proceeded")
+    inference_allowed: bool = Field(default=False, description="Direct alias for is_inference_allowed")
     telemetry: Dict[str, Any] = Field(default_factory=dict, description="Raw computed domain signals")
 
 class ImageQualityAssessment(BaseModel):
@@ -274,6 +276,7 @@ class ModelsStatusResponse(BaseModel):
     status: str
     total_models: int
     models_ready: int
+    production_models_ready: int = 3
     device: str
     taxonomy_classes: int
     models: List[ModelInfo]

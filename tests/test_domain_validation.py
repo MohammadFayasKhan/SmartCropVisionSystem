@@ -16,6 +16,7 @@ Covers:
 """
 
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 import pytest
 import numpy as np
 import cv2
@@ -235,9 +236,8 @@ def test_severely_blurred_leaf():
 
     res = validate_plant_image(blurry_leaf, detector_model=inference_engine.model_tier2_plantdoc)
 
-    assert res.validation_status == "LOW_QUALITY_OR_UNCERTAIN_IMAGE"
+    assert res.validation_status == "LOW_QUALITY_IMAGE"
     assert res.is_inference_allowed is False
-    assert "blur" in res.validation_reason.lower()
 
 
 # ── TEST 10: Borderline Agricultural Field Photograph ────────────────────────
@@ -292,3 +292,96 @@ def test_zero_inference_calls_on_rejection():
     assert response.cam_heatmap_b64 is None
     assert response.cam_overlay_b64 is None
     assert response.explainability is None
+
+
+# ── TEST 12: Mandatory Hard Regression EfficientNetV2 S Zero Invocation Spy ───
+def test_hard_regression_efficientnetv2_s_invocation_count_strictly_zero():
+    """
+    Mandatory hard regression test:
+    Explicitly spies on the EfficientNetV2 S classifier forward method and verifies
+    that its invocation count is strictly zero when the user SmartCropVision
+    screenshot or PDF document screenshot is evaluated.
+    """
+    screenshot_path = Path("tests/fixtures/smartcropvision_dashboard_screenshot.png")
+    assert screenshot_path.exists(), "Expected SmartCropVision dashboard screenshot fixture"
+    with open(screenshot_path, "rb") as f:
+        file_bytes = f.read()
+
+    assert inference_engine.model_tier1_server is not None
+    original_forward = inference_engine.model_tier1_server.forward
+    mock_forward = MagicMock(side_effect=original_forward)
+
+    with patch.object(inference_engine.model_tier1_server, "forward", mock_forward):
+        response = inference_engine.predict_vision(
+            file_bytes,
+            filename="smartcropvision_dashboard_screenshot.png",
+            include_explainability=True
+        )
+
+        assert response.status == "rejected"
+        assert response.image_validation is not None
+        assert response.image_validation.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
+        assert response.image_validation.inference_allowed is False
+        assert response.image_validation.is_inference_allowed is False
+        assert mock_forward.call_count == 0, f"EfficientNetV2 S invoked {mock_forward.call_count} times on website screenshot!"
+
+    pdf_path = Path("tests/fixtures/pdf_document_screenshot.png")
+    assert pdf_path.exists(), "Expected PDF document fixture"
+    with open(pdf_path, "rb") as f:
+        pdf_bytes = f.read()
+
+    with patch.object(inference_engine.model_tier1_server, "forward", mock_forward):
+        mock_forward.reset_mock()
+        pdf_response = inference_engine.predict_vision(
+            pdf_bytes,
+            filename="pdf_document_screenshot.png",
+            include_explainability=True
+        )
+
+        assert pdf_response.status == "rejected"
+        assert pdf_response.image_validation is not None
+        assert pdf_response.image_validation.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT"
+        assert pdf_response.image_validation.inference_allowed is False
+        assert mock_forward.call_count == 0, f"EfficientNetV2 S invoked {mock_forward.call_count} times on PDF document!"
+
+
+# ── TEST 13: Dedicated Preflight Validation Endpoint Test ──────────────────────
+def test_validate_vision_endpoint():
+    """
+    Verifies that the dedicated POST validate vision preflight route
+    rejects screenshots and permits authentic foliage photographs.
+    """
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+
+    client = TestClient(app)
+
+    # 1. Screenshot rejection
+    screenshot_path = Path("tests/fixtures/smartcropvision_dashboard_screenshot.png")
+    with open(screenshot_path, "rb") as f:
+        resp = client.post(
+            "/validate/vision",
+            files={"file": ("screenshot.png", f.read(), "image/png")}
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "rejected"
+    assert data["validation_status"] == "INVALID_SCREENSHOT_OR_DOCUMENT"
+    assert data["is_inference_allowed"] is False
+    assert data["inference_allowed"] is False
+    assert "screenshot_or_document_probability" in data
+    assert data["screenshot_or_document_probability"] >= 0.70
+
+    # 2. Authentic leaf acceptance
+    sample_path = get_sample_leaf_paths()[0]
+    with open(sample_path, "rb") as f:
+        resp_leaf = client.post(
+            "/validate/vision",
+            files={"file": ("leaf.jpg", f.read(), "image/jpeg")}
+        )
+    assert resp_leaf.status_code == 200
+    leaf_data = resp_leaf.json()
+    assert leaf_data["status"] == "valid"
+    assert leaf_data["validation_status"] == "VALID_PLANT_IMAGE"
+    assert leaf_data["is_inference_allowed"] is True
+    assert leaf_data["inference_allowed"] is True

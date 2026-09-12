@@ -758,8 +758,10 @@ class InferenceEngine:
                 validation_confidence=val_result.validation_confidence,
                 plant_presence=val_result.plant_presence,
                 leaf_presence=val_result.leaf_presence,
+                screenshot_or_document_probability=val_result.screenshot_or_document_probability,
                 image_quality=val_result.image_quality,
                 is_inference_allowed=False,
+                inference_allowed=False,
                 telemetry=val_result.telemetry
             )
 
@@ -783,7 +785,7 @@ class InferenceEngine:
                 diagnosis=DiagnosisSummary(
                     predicted_class="N/A",
                     disease_common_name="No Disease Diagnosis (Rejected Image)",
-                    crop="Non-Plant / Unsuitable",
+                    crop="N/A",
                     condition_type="invalid_input",
                     confidence_pct=0.0,
                     confidence_level="REJECTED",
@@ -1422,8 +1424,10 @@ class InferenceEngine:
                 validation_confidence=val_result.validation_confidence,
                 plant_presence=val_result.plant_presence,
                 leaf_presence=val_result.leaf_presence,
+                screenshot_or_document_probability=val_result.screenshot_or_document_probability,
                 image_quality=val_result.image_quality,
                 is_inference_allowed=True,
+                inference_allowed=True,
                 telemetry=val_result.telemetry
             ),
             image_quality=ImageQualityAssessment(**quality_info) if quality_info else None,

@@ -34,7 +34,8 @@ from backend.app.schemas.diagnosis import (
 from backend.app.services.model_registry import model_registry
 from backend.app.api.v1.router import api_router
 from backend.app.api.v1.endpoints.health import health_check, models_status, liveness_probe, readiness_probe
-from backend.app.utils.image_processing import ImageValidationError
+from backend.app.utils.image_processing import ImageValidationError, validate_uploaded_image
+from backend.app.utils.domain_validation import validate_plant_image
 
 # Configure structured application logging
 logging.basicConfig(
@@ -385,8 +386,76 @@ async def get_history(limit: int = 20):
     return {"count": len(items), "readings": items}
 
 
-# ── Root-Level Computer Vision Diagnosis (/predict/vision) ─────────────────────
-@app.post("/predict/vision", summary="Authoritative 3-Tier Plant Pathology Diagnosis")
+# ── Pre Inference Domain Validation Endpoint (/validate/vision) ───────────────
+@app.post("/validate/vision", summary="Pre Inference Botanical Domain and Suitability Gate")
+async def validate_vision(
+    request: Request,
+    file: UploadFile = File(...),
+    request_id: Optional[str] = Form(None)
+):
+    """
+    Dedicated pre inference validation gate:
+    Evaluates whether an uploaded image is a valid plant leaf photograph before
+    any disease classification or diagnostic inference is permitted.
+    """
+    if isinstance(request_id, str) and request_id.strip():
+        req_id = request_id.strip()
+    else:
+        req_id = request.headers.get("X-Request-ID") or getattr(request.state, "request_id", None) or uuid.uuid4().hex[:12]
+
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No image file received.")
+
+    filename = file.filename or "uploaded_leaf.jpg"
+    content_type = file.content_type
+
+    try:
+        file_bytes = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
+    finally:
+        await file.close()
+
+    try:
+        img_bgr, meta = validate_uploaded_image(file_bytes, filename=filename, content_type=content_type)
+        detector_candidate = inference_engine.model_tier2_plantdoc or inference_engine.model_tier2_yolo26
+        val_result = validate_plant_image(img_bgr, detector_model=detector_candidate, filename=filename)
+        
+        return {
+            "status": "valid" if val_result.is_inference_allowed else "rejected",
+            "request_id": req_id,
+            "filename": filename,
+            "validation_status": val_result.validation_status,
+            "validation_reason": val_result.validation_reason,
+            "validation_confidence": val_result.validation_confidence,
+            "plant_presence": val_result.plant_presence,
+            "leaf_presence": val_result.leaf_presence,
+            "screenshot_or_document_probability": val_result.screenshot_or_document_probability,
+            "image_quality": val_result.image_quality,
+            "is_inference_allowed": val_result.is_inference_allowed,
+            "inference_allowed": val_result.inference_allowed,
+            "telemetry": val_result.telemetry
+        }
+    except ImageValidationError as e:
+        return {
+            "status": "rejected",
+            "request_id": req_id,
+            "filename": filename,
+            "validation_status": "INVALID_NON_PLANT_IMAGE",
+            "validation_reason": str(e),
+            "validation_confidence": 1.0,
+            "plant_presence": False,
+            "leaf_presence": False,
+            "screenshot_or_document_probability": 0.0,
+            "image_quality": "Unreadable File",
+            "is_inference_allowed": False,
+            "inference_allowed": False,
+            "telemetry": {}
+        }
+
+
+# ── Root Level Computer Vision Diagnosis (/predict/vision) ─────────────────────
+@app.post("/predict/vision", summary="Authoritative 3 Tier Plant Pathology Diagnosis")
 async def predict_vision(
     request: Request,
     file: UploadFile = File(...),
@@ -427,6 +496,28 @@ async def predict_vision(
             include_explainability=bool(include_explainability),
             request_id=req_id
         )
+
+        if resp.status == "rejected":
+            val = resp.image_validation
+            is_screenshot = bool(val and val.validation_status == "INVALID_SCREENSHOT_OR_DOCUMENT")
+            return {
+                "response_schema_version": resp.response_schema_version,
+                "status": "rejected",
+                "request_id": req_id,
+                "filename": filename,
+                "validation_status": val.validation_status if val else "INVALID_NON_PLANT_IMAGE",
+                "validation_reason": val.validation_reason if val else "Specimen rejected by domain validation.",
+                "validation_confidence": val.validation_confidence if val else 1.0,
+                "plant_presence": val.plant_presence if val else False,
+                "leaf_presence": val.leaf_presence if val else False,
+                "screenshot_or_document_detection": is_screenshot,
+                "screenshot_or_document_probability": val.screenshot_or_document_probability if val else (1.0 if is_screenshot else 0.0),
+                "image_quality": val.image_quality if val else "Out of Domain / Non-Plant",
+                "inference_allowed": False,
+                "is_inference_allowed": False,
+                "image_validation": val.model_dump() if val else None,
+                "warnings": resp.warnings
+            }
 
         return {
             "response_schema_version": resp.response_schema_version,
